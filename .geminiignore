@@ -1,0 +1,26 @@
+# --- Android System Folders ---
+.gradle/
+.idea/
+build/
+app/build/
+captures/
+
+# --- Large Binaries & Assets ---
+*.apk
+*.aar
+*.jks
+*.keystore
+*.png
+*.jpg
+*.webp
+*.mp4
+assets/
+
+# --- Node & Local Configs ---
+node_modules/
+local.properties
+.DS_Store
+
+# --- Antigravity Logs ---
+.antigravity/
+artifacts/

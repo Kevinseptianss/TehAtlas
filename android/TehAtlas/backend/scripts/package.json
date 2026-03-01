@@ -1,0 +1,23 @@
+{
+  "name": "tehatlas-api-test-suite",
+  "version": "1.0.0",
+  "description": "Comprehensive API test suite and documentation generator for TehAtlas backend",
+  "main": "api-test-suite.js",
+  "scripts": {
+    "test": "node api-test-suite.js",
+    "docs": "node api-test-suite.js",
+    "simulate": "node simulation.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "keywords": [
+    "api",
+    "testing",
+    "documentation",
+    "tehatlas",
+    "backend"
+  ],
+  "author": "TehAtlas Development Team",
+  "license": "MIT"
+}

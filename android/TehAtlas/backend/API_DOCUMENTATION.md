@@ -1,0 +1,284 @@
+# TehAtlas Backend API Documentation
+
+**Version:** 1.0.0  
+**Base URL:** http://localhost:8080  
+**Generated:** 2026-02-12T03:50:16.603Z
+
+## Table of Contents
+- [Authentication](#authentication)
+- [Inventory Management](#inventory-management)
+- [Purchase Management](#purchase-management)
+- [Dashboard](#dashboard)
+- [Search](#search)
+- [Reporting](#reporting)
+- [Security](#security)
+
+## API Endpoints
+
+### Authentication
+
+#### ✅ POST /api/auth/login
+
+**Description:** User Authentication
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 5ms
+**Last Tested:** 2026-02-12T03:50:17.723Z
+
+---
+
+### Inventory Management
+
+#### ✅ GET /api/outlet/items
+
+**Description:** Get Outlet Inventory Items
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Test Status:** PASS
+**Response Time:** 3ms
+**Last Tested:** 2026-02-12T03:50:17.727Z
+
+---
+
+#### ✅ GET /api/outlet/inventory/items
+
+**Description:** Get Outlet Inventory Items (Detailed)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 3ms
+**Last Tested:** 2026-02-12T03:50:17.731Z
+
+---
+
+#### ✅ POST /api/outlet/inventory/add
+
+**Description:** Add Stock to Inventory
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Request Body:**
+```json
+{
+  "item_id": "string",
+  "quantity": "number",
+  "supplier": "string",
+  "unit_cost": "number"
+}
+```
+
+**Test Status:** PASS
+**Response Time:** 4ms
+**Last Tested:** 2026-02-12T03:50:17.735Z
+
+---
+
+#### ✅ POST /api/outlet/inventory/adjust
+
+**Description:** Adjust Stock Levels
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Request Body:**
+```json
+{
+  "item_id": "string",
+  "adjustment": "number",
+  "reason": "string"
+}
+```
+
+**Test Status:** PASS
+**Response Time:** 7ms
+**Last Tested:** 2026-02-12T03:50:17.742Z
+
+---
+
+#### ✅ GET /api/outlet/inventory/transactions
+
+**Description:** Get Inventory Transaction History
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Test Status:** PASS
+**Response Time:** 6ms
+**Last Tested:** 2026-02-12T03:50:17.752Z
+
+---
+
+### Purchase Management
+
+#### ✅ POST /api/outlet/purchases
+
+**Description:** Create Purchase Order
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Request Body:**
+```json
+{
+  "supplier_id": "string",
+  "items": "array"
+}
+```
+
+**Test Status:** PASS
+**Response Time:** 4ms
+**Last Tested:** 2026-02-12T03:50:17.746Z
+
+---
+
+### Dashboard
+
+#### ✅ GET /api/outlet/dashboard
+
+**Description:** Get Outlet Dashboard Data
+
+**Authentication:** Required
+**Allowed Roles:** cashier, admin
+
+**Test Status:** PASS
+**Response Time:** 8ms
+**Last Tested:** 2026-02-12T03:50:17.760Z
+
+---
+
+### Sales Management
+
+#### ✅ POST /api/outlet/sales
+
+**Description:** Create Sale Transaction
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 3ms
+**Last Tested:** 2026-02-12T03:50:17.764Z
+
+---
+
+#### ✅ GET /api/outlet/sales/
+
+**Description:** Get Sales History
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.766Z
+
+---
+
+### Security
+
+#### ✅ GET /api/admin/users
+
+**Description:** Admin Access Control Test
+
+**Authentication:** Required
+**Allowed Roles:** admin
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.769Z
+
+---
+
+#### ✅ GET /api/warehouse/items
+
+**Description:** Warehouse Access Control Test
+
+**Authentication:** Required
+**Allowed Roles:** warehouse, admin
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.776Z
+
+---
+
+### Admin Management
+
+#### ✅ GET /api/admin/outlets
+
+**Description:** Get All Outlets (Admin)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.771Z
+
+---
+
+#### ✅ GET /api/admin/dashboard
+
+**Description:** Get Admin Dashboard (Admin)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.773Z
+
+---
+
+### Warehouse Management
+
+#### ✅ GET /api/warehouse/dashboard
+
+**Description:** Get Warehouse Dashboard (Warehouse)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.779Z
+
+---
+
+#### ✅ POST /api/warehouse/transfers
+
+**Description:** Create Stock Transfer (Warehouse)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.781Z
+
+---
+
+#### ✅ GET /api/warehouse/transfers/
+
+**Description:** Get Transfer History (Warehouse)
+
+**Authentication:** Not required
+
+**Test Status:** PASS
+**Response Time:** 2ms
+**Last Tested:** 2026-02-12T03:50:17.784Z
+
+---
+
+## Test Summary
+
+- **Total Endpoints:** 17
+- **Passed Tests:** 17 ✅
+- **Failed Tests:** 0 ❌
+- **Success Rate:** 100.0%
+
+🎉 **All tests passed! API is ready for production.**
+
+---
+
+*Documentation generated by API Test Suite on 2026-02-12T03:50:17.785Z*
