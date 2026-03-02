@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import com.blackcode.tehatlas.network.*
@@ -47,7 +48,7 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 
 // Cashier Navigation
-enum class CashierScreen { POS, PRODUCTS, INVENTORY, HISTORY, SETTINGS, STOCK_HISTORY, PRODUCT_DETAILS }
+enum class CashierScreen { POS, PRODUCTS, INVENTORY, HISTORY, SETTINGS, STOCK_HISTORY, PRODUCT_DETAILS, EXPENSES }
 
 // Local UI cart model
 data class CartItem(
@@ -95,7 +96,7 @@ fun CashierDashboard(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = TextPrimary
                             )
-                            Text("Cashier", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            Text("Kasir", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         }
                     }
                 }
@@ -104,11 +105,12 @@ fun CashierDashboard(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 listOf(
-                    Triple(CashierScreen.POS, Icons.Filled.PointOfSale, "Point of Sale"),
-                    Triple(CashierScreen.PRODUCTS, Icons.Filled.Category, "Products"),
-                    Triple(CashierScreen.INVENTORY, Icons.Filled.Inventory, "Inventory"),
-                    Triple(CashierScreen.HISTORY, Icons.Filled.History, "Sales History"),
-                    Triple(CashierScreen.SETTINGS, Icons.Filled.Settings, "Settings")
+                    Triple(CashierScreen.POS, Icons.Filled.PointOfSale, "Kasir (POS)"),
+                    Triple(CashierScreen.PRODUCTS, Icons.Filled.Category, "Daftar Produk"),
+                    Triple(CashierScreen.INVENTORY, Icons.Filled.Inventory, "Inventaris & Stok"),
+                    Triple(CashierScreen.HISTORY, Icons.Filled.History, "Riwayat Penjualan"),
+                    Triple(CashierScreen.EXPENSES, Icons.Filled.AccountBalanceWallet, "Pengeluaran"),
+                    Triple(CashierScreen.SETTINGS, Icons.Filled.Settings, "Pengaturan")
                 ).forEach { (screen, icon, label) ->
                     NavigationDrawerItem(
                         icon = { Icon(icon, null, tint = if (currentScreen == screen) Primary else TextSecondary) },
@@ -131,7 +133,7 @@ fun CashierDashboard(
                 HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
                 NavigationDrawerItem(
                     icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = Error) },
-                    label = { Text("Logout", color = Error) },
+                    label = { Text("Keluar", color = Error) },
                     selected = false,
                     onClick = {
                         sessionManager.clearSession()
@@ -152,12 +154,13 @@ fun CashierDashboard(
                         title = {
                             Text(
                                 when (currentScreen) {
-                                    CashierScreen.POS -> "Point of Sale"
-                                    CashierScreen.PRODUCTS -> "Products"
-                                    CashierScreen.PRODUCT_DETAILS -> "Product Details"
-                                    CashierScreen.INVENTORY -> "Inventory"
-                                    CashierScreen.HISTORY -> "Sales History"
-                                    CashierScreen.SETTINGS -> "Settings"
+                                    CashierScreen.POS -> "Kasir (POS)"
+                                    CashierScreen.PRODUCTS -> "Daftar Produk"
+                                    CashierScreen.PRODUCT_DETAILS -> "Detail Produk"
+                                    CashierScreen.INVENTORY -> "Inventaris & Stok"
+                                    CashierScreen.HISTORY -> "Riwayat Penjualan"
+                                    CashierScreen.EXPENSES -> "Pengeluaran"
+                                    CashierScreen.SETTINGS -> "Pengaturan"
                                     else -> ""
                                 },
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
@@ -204,6 +207,7 @@ fun CashierDashboard(
                     }
                 )
                 CashierScreen.HISTORY -> CashierHistoryScreen(padding)
+                CashierScreen.EXPENSES -> CashierExpensesScreen(padding)
                 CashierScreen.SETTINGS -> CashierSettingsScreen(padding, onLogout)
                 CashierScreen.STOCK_HISTORY -> {
                     selectedItemForHistory?.let { item ->
@@ -287,10 +291,10 @@ fun CashierPOSScreen(padding: PaddingValues) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Current Order", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Pesanan Saat Ini", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                     if (cartItems.isNotEmpty()) {
                         TextButton(onClick = { cartItems = emptyList() }) {
-                            Text("Clear All", color = Error, style = MaterialTheme.typography.labelLarge)
+                            Text("Hapus Semua", color = Error, style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -306,9 +310,9 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 Icon(Icons.Filled.ShoppingCart, null, tint = TextTertiary.copy(alpha = 0.5f), modifier = Modifier.size(40.dp))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Your cart is empty", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
+                            Text("Keranjang Anda kosong", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Tap products to add them", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+                            Text("Ketuk produk untuk menambah", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
                         }
                     }
                 } else {
@@ -395,7 +399,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Proceed to Payment", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                    Text("Lanjut ke Pembayaran", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(Icons.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(20.dp))
                                 }
@@ -427,7 +431,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search products...", color = TextTertiary) },
+                            placeholder = { Text("Cari produk...", color = TextTertiary) },
                             leadingIcon = { Icon(Icons.Filled.Search, null, tint = TextTertiary) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(50),
@@ -476,7 +480,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Filled.PointOfSale, null, tint = TextTertiary, modifier = Modifier.size(40.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("No items found", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            Text("Produk tidak ditemukan", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         }
                     }
                 } else {
@@ -493,11 +497,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = when {
-                                        outOfStock -> Surface.copy(alpha = 0.6f)
-                                        inCart != null -> Primary.copy(alpha = 0.06f)
-                                        else -> Surface
-                                    }
+                                    containerColor = if (inCart != null) Primary.copy(alpha = 0.06f) else Surface
                                 ),
                                 elevation = CardDefaults.cardElevation(
                                     defaultElevation = if (inCart != null) 1.dp else 0.dp,
@@ -523,14 +523,10 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                         },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Accent bar
                                     Box(
                                         modifier = Modifier.width(4.dp).height(72.dp)
                                             .background(
-                                                brush = if (outOfStock)
-                                                    androidx.compose.ui.graphics.Brush.verticalGradient(listOf(TextTertiary.copy(0.3f), TextTertiary.copy(0.1f)))
-                                                else
-                                                    androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Primary, Secondary)),
+                                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Primary, Secondary)),
                                                 shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
                                             )
                                     )
@@ -539,12 +535,12 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                     // Icon
                                     Box(
                                         modifier = Modifier.size(46.dp).clip(RoundedCornerShape(14.dp))
-                                            .background(if (outOfStock) TextTertiary.copy(0.07f) else Primary.copy(0.1f)),
+                                            .background(Primary.copy(0.1f)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Filled.LocalDrink, null,
-                                            tint = if (outOfStock) TextTertiary else Primary,
+                                            tint = Primary,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -555,7 +551,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                         Text(
                                             item.name,
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                            color = if (outOfStock) TextTertiary else TextPrimary,
+                                            color = TextPrimary,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -567,18 +563,18 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                             Text(
                                                 item.unitPrice.formatRp(),
                                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = if (outOfStock) TextTertiary else Primary
+                                                color = Primary
                                             )
                                             Box(
                                                 modifier = Modifier.clip(RoundedCornerShape(6.dp))
-                                                .background(if (outOfStock) Error.copy(0.1f) else Success.copy(0.12f))
+                                                .background(Success.copy(0.12f))
                                                 .padding(horizontal = 7.dp, vertical = 2.dp)
                                         ) {
                                             val stockCount = item.getStock(context)
                                             Text(
                                                 "Stok $stockCount",
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                                color = if (outOfStock) Error else Success
+                                                color = Success
                                             )
                                         }
                                         }
@@ -618,7 +614,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                                 modifier = Modifier.size(28.dp)
                                             ) { Icon(Icons.Filled.Add, null, tint = Primary, modifier = Modifier.size(14.dp)) }
                                         }
-                                    } else if (!outOfStock) {
+                                    } else {
                                         // Not in cart — show + button
                                         Box(
                                             modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
@@ -658,7 +654,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                     contentColor = Color.White,
                     expanded = true,
                     icon = { Icon(Icons.Filled.ShoppingCart, null) },
-                    text = { Text("View Cart (${cartItems.size}) • ${subtotal.formatRp()}", fontWeight = FontWeight.Bold) },
+                    text = { Text("Lihat Keranjang (${cartItems.size}) • ${subtotal.formatRp()}", fontWeight = FontWeight.Bold) },
                     elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
                 )
             }
@@ -683,7 +679,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                         .size(36.dp)
                         .background(Background, CircleShape)
                 ) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = TextPrimary)
+                    Icon(Icons.Filled.Close, contentDescription = "Tutup", tint = TextPrimary)
                 }
             }
         }
@@ -718,8 +714,8 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 ) { Icon(Icons.Filled.ShoppingCartCheckout, null, tint = Color.White, modifier = Modifier.size(20.dp)) }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Complete Sale", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                                    Text("${cartItems.size} item${if (cartItems.size > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                                    Text("Selesaikan Penjualan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                    Text("${cartItems.size} produk", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
@@ -735,7 +731,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                         OutlinedTextField(
                             value = customerName,
                             onValueChange = { customerName = it },
-                            label = { Text("Customer Name (optional)") },
+                            label = { Text("Nama Pelanggan (opsional)") },
                             leadingIcon = { Icon(Icons.Filled.Person, null, tint = TextTertiary) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
@@ -746,9 +742,9 @@ fun CashierPOSScreen(padding: PaddingValues) {
                             singleLine = true
                         )
 
-                        Text("Payment Method", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                        Text("Metode Pembayaran", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("cash" to "Cash", "card" to "Card", "e-wallet" to "E-Wallet").forEach { (value, label) ->
+                            listOf("cash" to "Tunai", "card" to "Kartu", "e-wallet" to "Dompet Digital").forEach { (value, label) ->
                                 val isSelected = paymentMethod == value
                                 Box(
                                     modifier = Modifier.weight(1f)
@@ -778,7 +774,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(14.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
-                            ) { Text("Cancel", color = TextSecondary, style = MaterialTheme.typography.titleSmall) }
+                            ) { Text("Batal", color = TextSecondary, style = MaterialTheme.typography.titleSmall) }
 
                             Button(
                                 onClick = {
@@ -814,7 +810,7 @@ fun CashierPOSScreen(padding: PaddingValues) {
                                 else {
                                     Icon(Icons.Filled.Check, null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Complete Sale", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                                    Text("Selesaikan Penjualan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                                 }
                             }
                         }
@@ -897,8 +893,8 @@ fun CashierProductsScreen(
                             ) { Icon(Icons.Filled.AddShoppingCart, null, tint = Color.White, modifier = Modifier.size(22.dp)) }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text("Add New Product", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                                Text("Fill in the product details below", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                                Text("Tambah Produk Baru", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                Text("Isi detail produk di bawah ini", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
                             }
                         }
                     }
@@ -910,13 +906,13 @@ fun CashierProductsScreen(
                     )
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(value = name, onValueChange = { name = it },
-                            label = { Text("Product Name *") },
+                            label = { Text("Nama Produk *") },
                             leadingIcon = { Icon(Icons.Filled.LocalDrink, null, tint = TextTertiary, modifier = Modifier.size(18.dp)) },
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = fieldColors, singleLine = true)
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedTextField(value = category, onValueChange = { category = it },
-                                label = { Text("Category") },
+                                label = { Text("Kategori") },
                                 modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp),
                                 colors = fieldColors, singleLine = true)
                             OutlinedTextField(value = sku, onValueChange = { sku = it },
@@ -925,13 +921,13 @@ fun CashierProductsScreen(
                                 colors = fieldColors, singleLine = true)
                         }
                         OutlinedTextField(value = price, onValueChange = { price = it },
-                            label = { Text("Selling Price (Rp) *") },
+                            label = { Text("Harga Jual (Rp) *") },
                             leadingIcon = { Icon(Icons.Filled.AttachMoney, null, tint = TextTertiary, modifier = Modifier.size(18.dp)) },
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             colors = fieldColors, singleLine = true)
                         OutlinedTextField(value = description, onValueChange = { description = it },
-                            label = { Text("Description") },
+                            label = { Text("Deskripsi") },
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = fieldColors, singleLine = true)
 
@@ -941,7 +937,7 @@ fun CashierProductsScreen(
                                 modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(14.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
-                            ) { Text("Cancel", color = TextSecondary) }
+                            ) { Text("Batal", color = TextSecondary) }
 
                             Button(
                                 onClick = {
@@ -962,7 +958,7 @@ fun CashierProductsScreen(
                                 else {
                                     Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Add Product", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                                    Text("Tambah Produk", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                                 }
                             }
                         }
@@ -984,9 +980,9 @@ fun CashierProductsScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
-                    Text("Products", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
+                    Text("Daftar Produk", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text("${products.size} products", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text("${products.size} produk", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
@@ -996,8 +992,8 @@ fun CashierProductsScreen(
                             Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Filled.Category, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text("No products yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                                Text("Tap + to add your first product", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                Text("Belum ada produk", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                                Text("Ketuk + untuk menambah produk pertama Anda", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                             }
                         }
                     }
@@ -1018,7 +1014,7 @@ fun CashierProductsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(product.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                Text("${product.category ?: "N/A"} • SKU: ${product.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                Text("${product.category ?: "-"} • SKU: ${product.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Primary.copy(alpha = 0.08f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
@@ -1046,7 +1042,7 @@ fun CashierProductsScreen(
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
             containerColor = Primary, contentColor = Color.White,
             shape = RoundedCornerShape(16.dp)
-        ) { Icon(Icons.Filled.Add, "Add Product") }
+        ) { Icon(Icons.Filled.Add, "Tambah Produk") }
 
         PullRefreshIndicator(
             refreshing = isRefreshing,
@@ -1080,27 +1076,27 @@ fun CashierProductDetailsScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Product") },
-            text = { Text("Are you sure you want to delete \"${product.name}\"? This action cannot be undone.") },
+            title = { Text("Hapus Produk") },
+            text = { Text("Apakah Anda yakin ingin menghapus \"${product.name}\"? Tindakan ini tidak dapat dibatalkan.") },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
                         product.id?.let { repository.deleteOutletItem(it) }
                         onBack()
                     }
-                }) { Text("Delete", color = Error) }
+                }) { Text("Hapus", color = Error) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Batal") } }
         )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Product", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+                title = { Text("Edit Produk", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 actions = {
@@ -1131,7 +1127,7 @@ fun CashierProductDetailsScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Product Name") },
+                label = { Text("Nama Produk") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = fieldColors
@@ -1141,7 +1137,7 @@ fun CashierProductDetailsScreen(
                 OutlinedTextField(
                     value = category,
                     onValueChange = { category = it },
-                    label = { Text("Category") },
+                    label = { Text("Kategori") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = fieldColors
@@ -1161,7 +1157,7 @@ fun CashierProductDetailsScreen(
                     value = product.costPrice.toInt().toString(),
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Buy Price (Hint)") },
+                    label = { Text("Harga Beli (Info)") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1175,7 +1171,7 @@ fun CashierProductDetailsScreen(
                 OutlinedTextField(
                     value = sellingPrice,
                     onValueChange = { if (it.all { char -> char.isDigit() }) sellingPrice = it },
-                    label = { Text("Selling Price (Rp)") },
+                    label = { Text("Harga Jual (Rp)") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = fieldColors,
@@ -1186,7 +1182,7 @@ fun CashierProductDetailsScreen(
             OutlinedTextField(
                 value = stock,
                 onValueChange = { if (it.all { char -> char.isDigit() }) stock = it },
-                label = { Text("Current Stock") },
+                label = { Text("Stok Saat Ini") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = fieldColors,
@@ -1196,7 +1192,7 @@ fun CashierProductDetailsScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description") },
+                label = { Text("Deskripsi") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = fieldColors,
@@ -1224,7 +1220,7 @@ fun CashierProductDetailsScreen(
                             )
                         )
                         if (result is Resource.Success) {
-                            android.widget.Toast.makeText(context, "Product updated successfully", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, "Produk berhasil diperbarui", android.widget.Toast.LENGTH_SHORT).show()
                             onBack()
                         } else if (result is Resource.Error) {
                             android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_LONG).show()
@@ -1240,7 +1236,7 @@ fun CashierProductDetailsScreen(
                 if (isSaving) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Save Changes", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text("Simpan Perubahan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -1328,8 +1324,8 @@ fun CashierInventoryScreen(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text("Create Purchase Order", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                                Text("Add items to your order", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                                Text("Buat Pesanan Pembelian", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                Text("Tambah item ke pesanan Anda", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
                             }
                         }
                     }
@@ -1340,13 +1336,13 @@ fun CashierInventoryScreen(
                         focusedContainerColor = Background, unfocusedContainerColor = Background
                     )
                     Column(modifier = Modifier.padding(20.dp).heightIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(value = orderNotes, onValueChange = { orderNotes = it }, label = { Text("Order Title / Notes") },
+                        OutlinedTextField(value = orderNotes, onValueChange = { orderNotes = it }, label = { Text("Judul / Catatan Pesanan") },
                             leadingIcon = { Icon(Icons.Filled.Notes, null, tint = TextTertiary, modifier = Modifier.size(18.dp)) },
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), singleLine = true, colors = fieldColors)
 
                         if (addedItems.isNotEmpty()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("Items Added (${addedItems.size})", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                                Text("Item Ditambahkan (${addedItems.size})", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                                 val orderTotal = addedItems.sumOf { it.totalPrice }
                                 Text(orderTotal.formatRp(), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                             }
@@ -1372,11 +1368,11 @@ fun CashierInventoryScreen(
                             HorizontalDivider(color = DividerColor)
                         }
 
-                        Text("Add Item", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                        Text("Tambah Item", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
                             OutlinedTextField(
                                 value = products.getOrNull(selectedItemIdx)?.name ?: "",
-                                onValueChange = {}, readOnly = true, label = { Text("Select Product") },
+                                onValueChange = {}, readOnly = true, label = { Text("Pilih Produk") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                                 modifier = Modifier.fillMaxWidth().menuAnchor(), shape = RoundedCornerShape(14.dp), colors = fieldColors
                             )
@@ -1387,10 +1383,10 @@ fun CashierInventoryScreen(
                             }
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutlinedTextField(value = qty, onValueChange = { qty = it }, label = { Text("Qty") },
+                            OutlinedTextField(value = qty, onValueChange = { qty = it }, label = { Text("Jml") },
                                 modifier = Modifier.weight(0.35f), shape = RoundedCornerShape(14.dp),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, colors = fieldColors)
-                            OutlinedTextField(value = cost, onValueChange = { cost = it }, label = { Text("Unit Cost (Rp)") },
+                            OutlinedTextField(value = cost, onValueChange = { cost = it }, label = { Text("Harga Satuan (Rp)") },
                                 modifier = Modifier.weight(0.65f), shape = RoundedCornerShape(14.dp),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, colors = fieldColors)
                         }
@@ -1408,20 +1404,20 @@ fun CashierInventoryScreen(
                         ) {
                             Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Add to Order", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                            Text("Tambah ke Pesanan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedButton(onClick = { showPurchaseDialog = false }, modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
-                            ) { Text("Cancel", color = TextSecondary) }
+                            ) { Text("Batal", color = TextSecondary) }
                             Button(
                                 onClick = {
                                     isSaving = true
                                     val orderTotal = addedItems.sumOf { it.totalPrice }
                                     scope.launch {
                                         val result = repository.createOutletPurchase(CreateOutletPurchaseRequest(
-                                            invoiceId = "", outletId = "", items = addedItems, totalAmount = orderTotal, notes = orderNotes.ifBlank { "Cashier Purchase" }
+                                            invoiceId = "", outletId = "", items = addedItems, totalAmount = orderTotal, notes = orderNotes.ifBlank { "Pembelian Kasir" }
                                         ))
                                         if (result is Resource.Success) { showPurchaseDialog = false; refreshTrigger++ }
                                         isSaving = false
@@ -1435,7 +1431,7 @@ fun CashierInventoryScreen(
                                 else {
                                     Icon(Icons.Filled.Send, null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Submit Order", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                                    Text("Kirim Pesanan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                                 }
                             }
                         }
@@ -1477,14 +1473,14 @@ fun CashierInventoryScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("Status", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.8f))
                                 Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.25f)).padding(horizontal = 12.dp, vertical = 4.dp)) {
-                                    Text(purchase.status.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                                    Text(when(purchase.status) { "received" -> "Diterima"; "pending" -> "Menunggu"; else -> purchase.status.replaceFirstChar { it.uppercase() } }, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
                                 }
                             }
                         }
                     }
 
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${purchase.items.size} item${if (purchase.items.size > 1) "s" else ""}", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
+                        Text("${purchase.items.size} produk", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
                         LazyColumn(modifier = Modifier.heightIn(max = 220.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(purchase.items) { item ->
                                 Row(
@@ -1511,7 +1507,7 @@ fun CashierInventoryScreen(
                                 modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(14.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, DividerColor)
-                            ) { Text("Close", color = TextSecondary) }
+                            ) { Text("Tutup", color = TextSecondary) }
                             if (purchase.status == "pending") {
                                 Button(
                                     onClick = {
@@ -1530,7 +1526,7 @@ fun CashierInventoryScreen(
                                     else {
                                         Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Mark as Received", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                                        Text("Tandai Telah Diterima", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                                     }
                                 }
                             }
@@ -1543,9 +1539,9 @@ fun CashierInventoryScreen(
     Box(modifier = Modifier.fillMaxSize().background(Background).padding(padding).pullRefresh(pullRefreshState)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-                Text("Inventory", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
+                Text("Inventaris", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("Stock levels & purchase orders", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text("Tingkat stok & pesanan pembelian", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
             }
 
             // Tabs
@@ -1555,8 +1551,8 @@ fun CashierInventoryScreen(
                 contentColor = Primary,
                 modifier = Modifier.padding(horizontal = 20.dp).clip(RoundedCornerShape(12.dp))
             ) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Stock") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Purchases") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Stok") })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Pembelian") })
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -1577,14 +1573,14 @@ fun CashierInventoryScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
                                     Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Items", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                        Text("Item", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text("${products.size}", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
                                     }
                                 }
                                 Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
                                     Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Categories", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                        Text("Kategori", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text("${products.mapNotNull { it.category }.distinct().size}", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = Secondary)
                                     }
@@ -1598,7 +1594,7 @@ fun CashierInventoryScreen(
                                     Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                         Icon(Icons.Filled.Inventory, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                                         Spacer(modifier = Modifier.height(12.dp))
-                                        Text("No items in inventory", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                                        Text("Tidak ada item di inventaris", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                                     }
                                 }
                             }
@@ -1616,8 +1612,8 @@ fun CashierInventoryScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(item.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                        Text("${item.category ?: "N/A"} | SKU: ${item.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
-                                        Text("Buy Price: ${item.costPrice.formatRp()}", style = MaterialTheme.typography.labelSmall, color = Primary)
+                                        Text("${item.category ?: "-"} | SKU: ${item.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                        Text("Harga Beli: ${item.costPrice.formatRp()}", style = MaterialTheme.typography.labelSmall, color = Primary)
                                     }
                                     Icon(Icons.Filled.KeyboardArrowRight, null, tint = TextTertiary, modifier = Modifier.size(24.dp))
                                 }
@@ -1632,8 +1628,8 @@ fun CashierInventoryScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Filled.LocalShipping, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text("No purchase orders", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                                Text("Tap + to create one", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                Text("Tidak ada pesanan pembelian", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                                Text("Ketuk + untuk membuat pesanan", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                             }
                         }
                     } else {
@@ -1654,7 +1650,7 @@ fun CashierInventoryScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(purchase.notes ?: "Order #${purchase.id?.takeLast(6) ?: "-"}", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                            Text("${purchase.items.size} items", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                            Text("${purchase.items.size} produk", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                                         }
                                         Box(
                                             modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(
@@ -1662,7 +1658,11 @@ fun CashierInventoryScreen(
                                             ).padding(horizontal = 8.dp, vertical = 4.dp)
                                         ) {
                                             Text(
-                                                purchase.status.replaceFirstChar { it.uppercase() },
+                                                when(purchase.status) {
+                                                    "received" -> "Diterima"
+                                                    "pending" -> "Menunggu"
+                                                    else -> purchase.status.replaceFirstChar { it.uppercase() }
+                                                },
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                                 color = when (purchase.status) { "received" -> Success; "pending" -> Warning; else -> TextTertiary }
                                             )
@@ -1683,7 +1683,7 @@ fun CashierInventoryScreen(
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
             containerColor = Primary, contentColor = Color.White,
             shape = RoundedCornerShape(16.dp)
-        ) { Icon(Icons.Filled.Add, "New Purchase") }
+        ) { Icon(Icons.Filled.Add, "Pembelian Baru") }
 
         PullRefreshIndicator(
             refreshing = isRefreshing,
@@ -1734,12 +1734,12 @@ fun CashierHistoryScreen(padding: PaddingValues) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.padding(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 24.dp)) {
             Text(
-                "Sales History",
+                "Riwayat Penjualan",
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Recent transactions", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text("Transaksi terbaru", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
 
         if (isLoading) {
@@ -1751,8 +1751,8 @@ fun CashierHistoryScreen(padding: PaddingValues) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Filled.History, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("No sales yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                    Text("Your completed sales will appear here", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                    Text("Belum ada penjualan", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                    Text("Penjualan Anda akan muncul di sini", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                 }
             }
         } else {
@@ -1774,14 +1774,14 @@ fun CashierHistoryScreen(padding: PaddingValues) {
                             ) { Icon(Icons.Filled.Receipt, null, tint = Primary, modifier = Modifier.size(18.dp)) }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(sale.receiptNumber ?: "Sale", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                val customer = sale.customerName ?: "Walk-in Customer"
+                                Text(sale.receiptNumber ?: "Penjualan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                                val customer = sale.customerName ?: "Pelanggan Umum"
                                 Text(customer, style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Box(modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(Primary.copy(alpha = 0.08f)).padding(horizontal = 6.dp, vertical = 2.dp)) {
                                         Text(sale.paymentMethod.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall, color = Primary)
                                     }
-                                    Text("${sale.items.size} items", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                    Text("${sale.items.size} produk", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                 }
                             }
                             Text(sale.totalAmount.formatRp(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
@@ -1790,8 +1790,8 @@ fun CashierHistoryScreen(padding: PaddingValues) {
                 }
                 item { Spacer(modifier = Modifier.height(16.dp)) }
             }
-            }
         }
+    }
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
@@ -1813,9 +1813,9 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Settings", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
+            Text("Pengaturan", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp), color = TextPrimary)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Account and app settings", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text("Akun dan pengaturan aplikasi", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
 
         item {
@@ -1828,7 +1828,7 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(sessionManager.getUsername() ?: "Cashier", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                            Text("Cashier", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            Text("Kasir", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
@@ -1840,7 +1840,7 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Logout", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                        Text("Keluar", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                     }
                 }
             }
@@ -1850,7 +1850,7 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Server", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                    Text("Connected to: ${RetrofitClient.BASE_URL}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                    Text("Terhubung ke: ${RetrofitClient.BASE_URL}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                 }
             }
         }
@@ -1880,7 +1880,7 @@ fun CashierStockHistoryScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Stock History", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("Riwayat Stok", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                         Text(product.name, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                     }
                 },
@@ -1908,8 +1908,8 @@ fun CashierStockHistoryScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.History, null, tint = TextTertiary, modifier = Modifier.size(64.dp))
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No history yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                        Text("Transactions will appear here", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Belum ada riwayat", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Transaksi akan muncul di sini", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                     }
                 }
             } else {
@@ -1924,7 +1924,7 @@ fun CashierStockHistoryScreen(
                             colors = CardDefaults.cardColors(containerColor = Surface)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Current Product Info", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                Text("Info Produk Saat Ini", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
@@ -1932,7 +1932,7 @@ fun CashierStockHistoryScreen(
                                         Text(product.sku ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                        Text("Harga Beli", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                         Text(product.costPrice.formatRp(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                                     }
                                 }
@@ -1941,7 +1941,7 @@ fun CashierStockHistoryScreen(
                     }
 
                     item {
-                        Text("Movement Logs", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
+                        Text("Log Mutasi", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
                     }
 
                     items(stockHistory) { log ->
@@ -1962,14 +1962,19 @@ fun CashierStockHistoryScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        when(log.type) { "purchase" -> "Purchase"; "sale" -> "Sale"; else -> log.type.replaceFirstChar { it.uppercase() } },
+                                        when(log.type) {
+                                            "purchase" -> "Pembelian"
+                                            "sale" -> "Penjualan"
+                                            "adjustment" -> "Penyesuaian"
+                                            else -> log.type.replaceFirstChar { it.uppercase() }
+                                        },
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = TextPrimary
                                     )
                                     Text(log.createdAt?.take(16)?.replace("T", " ") ?: "", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                     val displayCost = if ((log.costPrice ?: 0.0) > 0) log.costPrice else product.costPrice
                                     if ((displayCost ?: 0.0) > 0) {
-                                        Text("Price: ${displayCost!!.formatRp()}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Secondary)
+                                        Text("Harga: ${displayCost!!.formatRp()}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Secondary)
                                     }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
@@ -1978,7 +1983,7 @@ fun CashierStockHistoryScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         color = if (log.changeQty > 0) Success else Warning
                                     )
-                                    Text("Bal: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                    Text("Saldo: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                 }
                             }
                         }
@@ -1987,6 +1992,251 @@ fun CashierStockHistoryScreen(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@Composable
+fun CashierExpensesScreen(padding: PaddingValues) {
+    val context = LocalContext.current
+    val repository = remember { TehAtlasRepository(SessionManager.getInstance(context)) }
+    val scope = rememberCoroutineScope()
+
+    var expenses by remember { mutableStateOf<List<ExpenseDto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    // Add Expense Dialog state
+    var showAddDialog by remember { mutableStateOf(false) }
+    var description by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var categoryExpanded by remember { mutableStateOf(false) }
+
+    val categoryHistory = remember(expenses) {
+        expenses.map { it.category }.distinct().sorted()
+    }
+
+    val filteredCategories = remember(category, categoryHistory) {
+        categoryHistory.filter { it.contains(category, ignoreCase = true) }
+    }
+
+    fun fetchData() {
+        scope.launch {
+            isLoading = true
+            when (val result = repository.getExpenses()) {
+                is Resource.Success -> {
+                    expenses = result.data ?: emptyList()
+                    errorMessage = null
+                }
+                is Resource.Error -> errorMessage = result.message
+                is Resource.Loading -> {}
+            }
+            isLoading = false
+        }
+    }
+
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            scope.launch {
+                isRefreshing = true
+                fetchData()
+                isRefreshing = false
+            }
+        }
+    )
+
+    LaunchedEffect(Unit) { fetchData() }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSaving) showAddDialog = false },
+            title = { Text("Tambah Pengeluaran", fontWeight = FontWeight.Bold, color = Primary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Keterangan") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = amount,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) amount = it },
+                        label = { Text("Jumlah (Rp)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        ExposedDropdownMenuBox(
+                            expanded = categoryExpanded,
+                            onExpandedChange = { categoryExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = category,
+                                onValueChange = { 
+                                    category = it
+                                    categoryExpanded = true 
+                                },
+                                label = { Text("Kategori") },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+
+                            if (filteredCategories.isNotEmpty()) {
+                                ExposedDropdownMenu(
+                                    expanded = categoryExpanded,
+                                    onDismissRequest = { categoryExpanded = false }
+                                ) {
+                                    filteredCategories.forEach { selectionOption ->
+                                        DropdownMenuItem(
+                                            text = { Text(selectionOption) },
+                                            onClick = {
+                                                category = selectionOption
+                                                categoryExpanded = false
+                                            },
+                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val amountDouble = amount.toDoubleOrNull() ?: 0.0
+                        if (description.isNotBlank() && amountDouble > 0 && category.isNotBlank()) {
+                            isSaving = true
+                            scope.launch {
+                                val result = repository.createExpense(
+                                    CreateExpenseRequest(
+                                        description = description,
+                                        amount = amountDouble,
+                                        category = category
+                                    )
+                                )
+                                isSaving = false
+                                if (result is Resource.Success) {
+                                    showAddDialog = false
+                                    description = ""
+                                    amount = ""
+                                    fetchData()
+                                }
+                            }
+                        }
+                    },
+                    enabled = description.isNotBlank() && amount.isNotBlank() && category.isNotBlank() && !isSaving,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                ) {
+                    if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text("Simpan")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }, enabled = !isSaving) {
+                    Text("Batal", color = TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Surface
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
+        if (isLoading && !isRefreshing) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Primary)
+            }
+        } else if (errorMessage != null && expenses.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Filled.ErrorOutline, null, tint = Error, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(errorMessage ?: "Gagal memuat data", color = TextSecondary)
+                    Button(onClick = { fetchData() }, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Coba Lagi")
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
+            ) {
+                if (expenses.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillParentMaxSize().padding(bottom = 100.dp), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Filled.ReceiptLong, null, tint = TextTertiary.copy(alpha = 0.3f), modifier = Modifier.size(64.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Tidak ada pengeluaran", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                                Text("Klik + untuk menambah pengeluaran baru", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            }
+                        }
+                    }
+                } else {
+                    items(expenses) { expense ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Error.copy(alpha = 0.08f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Filled.ArrowDownward, null, tint = Error, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(expense.description, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                                    Text("${expense.category} • ${expense.expenseDate?.split("T")?.getOrNull(0) ?: ""}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                }
+                                Text(expense.amount.formatRp(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Error)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { showAddDialog = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            containerColor = Primary,
+            contentColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Filled.Add, "Tambah Pengeluaran")
+        }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = Primary
+        )
     }
 }
 

@@ -21,6 +21,7 @@ import java.util.Locale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,9 +57,9 @@ fun AdminDashboard(
             ) {
                 val items = listOf(
                     Triple(AdminScreen.DASHBOARD, Icons.Filled.Dashboard, "Dashboard"),
-                    Triple(AdminScreen.OUTLETS, Icons.Filled.Store, "Outlets"),
-                    Triple(AdminScreen.WAREHOUSE, Icons.Filled.Inventory, "Warehouse"),
-                    Triple(AdminScreen.SETTINGS, Icons.Filled.Settings, "Settings")
+                    Triple(AdminScreen.OUTLETS, Icons.Filled.Store, "Outlet"),
+                    Triple(AdminScreen.WAREHOUSE, Icons.Filled.Inventory, "Gudang"),
+                    Triple(AdminScreen.SETTINGS, Icons.Filled.Settings, "Pengaturan")
                 )
 
                 items.forEach { (screen, icon, label) ->
@@ -106,6 +107,9 @@ fun DashboardScreen(padding: PaddingValues) {
     var showDatePicker by remember { mutableStateOf(false) }
     val dateRangePickerState = rememberDateRangePickerState()
 
+    // Metric Detail state
+    var selectedMetric by remember { mutableStateOf<MetricDetailType?>(null) }
+
     fun fetchData() {
         scope.launch {
             isLoading = true
@@ -152,20 +156,20 @@ fun DashboardScreen(padding: PaddingValues) {
                         endDate = sdf.format(java.util.Date(end))
                     }
                     showDatePicker = false
-                }) { Text("Apply", color = Primary) }
+                }) { Text("Terapkan", color = Primary) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     startDate = null
                     endDate = null
                     showDatePicker = false
-                }) { Text("Clear", color = TextSecondary) }
+                }) { Text("Bersihkan", color = TextSecondary) }
             }
         ) {
             DateRangePicker(
                 state = dateRangePickerState,
                 modifier = Modifier.height(500.dp),
-                title = { Text("Select Date Range", modifier = Modifier.padding(16.dp)) }
+                title = { Text("Pilih Rentang Tanggal", modifier = Modifier.padding(16.dp)) }
             )
         }
     }
@@ -182,12 +186,12 @@ fun DashboardScreen(padding: PaddingValues) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = Error, modifier = Modifier.size(48.dp))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(errorMessage ?: "Unknown error", color = TextSecondary)
+                Text(errorMessage ?: "Kesalahan tidak diketahui", color = TextSecondary)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { fetchData() },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
-                ) { Text("Retry") }
+                ) { Text("Coba Lagi") }
             }
         }
         return
@@ -206,7 +210,7 @@ fun DashboardScreen(padding: PaddingValues) {
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Welcome, ${sessionManager.getUsername() ?: "Admin"}",
+                "Selamat Datang, ${sessionManager.getUsername() ?: "Admin"}",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Primary
@@ -214,7 +218,7 @@ fun DashboardScreen(padding: PaddingValues) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Here's your business overview",
+                "Berikut adalah ringkasan bisnis Anda",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary
             )
@@ -231,7 +235,7 @@ fun DashboardScreen(padding: PaddingValues) {
                 Icon(Icons.Filled.DateRange, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    if (startDate != null && endDate != null) "$startDate  →  $endDate" else "All Time — Tap to filter by date",
+                    if (startDate != null && endDate != null) "$startDate  →  $endDate" else "Semua Waktu — Ketuk untuk filter tanggal",
                     color = if (startDate != null) Primary else TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -241,32 +245,91 @@ fun DashboardScreen(padding: PaddingValues) {
         // Key Metric Cards - Row 1
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AdminMetricCard(title = "Total Outlets", value = data.totalOutlets.toString(), icon = Icons.Filled.Store, modifier = Modifier.weight(1f))
-                AdminMetricCard(title = "Total Products", value = data.totalProducts.toString(), icon = Icons.Filled.Inventory, modifier = Modifier.weight(1f))
+                AdminMetricCard(
+                    title = "Total Outlet", 
+                    value = data.totalOutlets.toString(), 
+                    icon = Icons.Filled.Store, 
+                    modifier = Modifier.weight(1f)
+                )
+                AdminMetricCard(
+                    title = "Total Produk", 
+                    value = data.totalProducts.toString(), 
+                    icon = Icons.Filled.Inventory, 
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
         // Key Metric Cards - Row 2
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AdminMetricCard(title = "Total Revenue", value = data.totalRevenue.formatRp(), icon = Icons.Filled.AttachMoney, modifier = Modifier.weight(1f))
-                AdminMetricCard(title = "COGS", value = data.totalCogs.formatRp(), icon = Icons.Filled.ShoppingCart, modifier = Modifier.weight(1f))
+                AdminMetricCard(
+                    title = "Total Pendapatan", 
+                    value = data.totalRevenue.formatRp(), 
+                    icon = Icons.Filled.AttachMoney, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.REVENUE }
+                )
+                AdminMetricCard(
+                    title = "HPP (COGS)", 
+                    value = data.totalCogs.formatRp(), 
+                    icon = Icons.Filled.ShoppingCart, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.COGS }
+                )
             }
         }
 
         // Key Metric Cards - Row 3
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AdminMetricCard(title = "Gross Profit", value = data.grossProfit.formatRp(), icon = Icons.Filled.AccountBalanceWallet, modifier = Modifier.weight(1f))
-                AdminMetricCard(title = "Net Profit", value = data.netProfit.formatRp(), icon = Icons.Filled.TrendingUp, modifier = Modifier.weight(1f))
+                AdminMetricCard(
+                    title = "Laba Kotor", 
+                    value = data.grossProfit.formatRp(), 
+                    icon = Icons.Filled.AccountBalanceWallet, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.GROSS_PROFIT }
+                )
+                AdminMetricCard(
+                    title = "Laba Bersih", 
+                    value = data.netProfit.formatRp(), 
+                    icon = Icons.Filled.TrendingUp, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.NET_PROFIT }
+                )
             }
         }
 
         // Key Metric Cards - Row 4
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AdminMetricCard(title = "Selling Margin", value = String.format(Locale.ROOT, "%.1f%%", data.sellingMargin), icon = Icons.Filled.Percent, modifier = Modifier.weight(1f))
-                AdminMetricCard(title = "Invoices", value = "${data.totalInvoices} (${data.pendingInvoices} pending)", icon = Icons.Filled.Receipt, modifier = Modifier.weight(1f))
+                AdminMetricCard(
+                    title = "Margin Penjualan", 
+                    value = String.format(Locale.ROOT, "%.1f%%", data.sellingMargin), 
+                    icon = Icons.Filled.Percent, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.MARGIN }
+                )
+                AdminMetricCard(
+                    title = "Beban Pengeluaran", 
+                    value = data.expenses.formatRp(), 
+                    icon = Icons.Filled.MoneyOff, 
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedMetric = MetricDetailType.EXPENSES }
+                )
+            }
+        }
+
+        // Key Metric Cards - Row 5
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AdminMetricCard(
+                    title = "Tagihan", 
+                    value = "${data.totalInvoices} (${data.pendingInvoices} pending)", 
+                    icon = Icons.Filled.Receipt, 
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
 
@@ -282,7 +345,7 @@ fun DashboardScreen(padding: PaddingValues) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Revenue Trend",
+                            "Tren Pendapatan",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = TextPrimary
                         )
@@ -305,7 +368,7 @@ fun DashboardScreen(padding: PaddingValues) {
                         Icon(Icons.Filled.Warning, contentDescription = null, tint = Warning)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            "${data.pendingInvoices} pending invoice(s) require attention",
+                            "${data.pendingInvoices} tagihan pending memerlukan perhatian",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = TextPrimary
                         )
@@ -318,7 +381,7 @@ fun DashboardScreen(padding: PaddingValues) {
         val outlets = data.outlets.orEmpty()
         if (outlets.isNotEmpty()) {
             item {
-                Text("Outlets", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
+                Text("Outlet", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
             }
             items(outlets.take(4)) { outlet ->
                 Card(
@@ -335,7 +398,7 @@ fun DashboardScreen(padding: PaddingValues) {
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(outlet.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                            Text(outlet.address ?: "No address", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            Text(outlet.address ?: "Alamat tidak tersedia", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         }
                         if (outlet.phone != null) {
                             Text(outlet.phone, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
@@ -350,7 +413,7 @@ fun DashboardScreen(padding: PaddingValues) {
         if (recentSales.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Recent Sales", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
+                Text("Penjualan Terakhir", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
             }
             items(recentSales.take(5)) { sale ->
                 Card(
@@ -366,8 +429,8 @@ fun DashboardScreen(padding: PaddingValues) {
                         ) { Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = Success, modifier = Modifier.size(18.dp)) }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(sale.receiptNumber ?: "Sale", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = TextPrimary)
-                            Text("${sale.customerName ?: "Walk-in"} | ${sale.paymentMethod}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            Text(sale.receiptNumber ?: "Penjualan", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = TextPrimary)
+                            Text("${sale.customerName ?: "Pelanggan Umum"} | ${sale.paymentMethod}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         }
                         Text(sale.totalAmount.formatRp(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Success)
                     }
@@ -380,7 +443,7 @@ fun DashboardScreen(padding: PaddingValues) {
         if (recentPurchases.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Recent Purchases", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
+                Text("Pembelian Terakhir", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, color = TextPrimary))
             }
             items(recentPurchases.take(5)) { purchase ->
                 Card(
@@ -417,10 +480,9 @@ fun DashboardScreen(padding: PaddingValues) {
                     }
                 }
             }
+            }
         }
 
-        item { Spacer(modifier = Modifier.height(24.dp)) }
-    }
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
@@ -428,6 +490,19 @@ fun DashboardScreen(padding: PaddingValues) {
             contentColor = Primary
         )
     }
+
+    // Full-screen Metric Detail
+    selectedMetric?.let { metricType ->
+        MetricDetailScreen(
+            type = metricType,
+            data = data,
+            onBack = { selectedMetric = null }
+        )
+    }
+}
+
+enum class MetricDetailType {
+    REVENUE, COGS, GROSS_PROFIT, EXPENSES, NET_PROFIT, MARGIN
 }
 
 // ─── Outlets Management Screen ─────────────────────────────────────────
@@ -555,11 +630,11 @@ fun OutletsManagementScreen(padding: PaddingValues) {
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
                 ) {
                     if (isSaving) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Surface, strokeWidth = 2.dp)
-                    else Text("Create")
+                    else Text("Buat")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }, enabled = !isSaving) { Text("Cancel", color = TextSecondary) }
+                TextButton(onClick = { showAddDialog = false }, enabled = !isSaving) { Text("Batal", color = TextSecondary) }
             }
         )
     }
@@ -580,10 +655,10 @@ fun OutletsManagementScreen(padding: PaddingValues) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = Error, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(errorMessage ?: "Unknown error", color = TextSecondary)
+                    Text(errorMessage ?: "Kesalahan tidak diketahui", color = TextSecondary)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { refreshTrigger++ }, colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Text("Retry")
+                        Text("Coba Lagi")
                     }
                 }
             }
@@ -597,7 +672,7 @@ fun OutletsManagementScreen(padding: PaddingValues) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Outlets Management",
+                        "Kelola Outlet",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Primary
@@ -605,7 +680,7 @@ fun OutletsManagementScreen(padding: PaddingValues) {
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "${outlets.size} outlet(s) registered",
+                        "${outlets.size} outlet terdaftar",
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary
                     )
@@ -824,11 +899,11 @@ fun WarehouseScreen(padding: PaddingValues) {
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isSavingUser) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Surface, strokeWidth = 2.dp)
-                    else Text("Create", fontWeight = FontWeight.SemiBold)
+                    else Text("Buat", fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddUserDialog = false }, enabled = !isSavingUser) { Text("Cancel", color = TextSecondary) }
+                TextButton(onClick = { showAddUserDialog = false }, enabled = !isSavingUser) { Text("Batal", color = TextSecondary) }
             },
             shape = RoundedCornerShape(24.dp),
             containerColor = Surface
@@ -857,13 +932,13 @@ fun WarehouseScreen(padding: PaddingValues) {
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Stock History (Admin)", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text("Riwayat Stok (Admin)", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                             Text(item.name, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                         }
                     },
                     navigationIcon = {
                         IconButton(onClick = { selectedStockItem = null }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -881,7 +956,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Filled.History, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("No stock history found", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Text("Riwayat stok tidak ditemukan", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                         }
                     }
                 } else {
@@ -898,7 +973,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                                 colors = CardDefaults.cardColors(containerColor = Surface)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Current Product Info", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                    Text("Informasi Produk Saat Ini", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Column(modifier = Modifier.weight(1f)) {
@@ -906,7 +981,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                                             Text(item.sku ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                         }
                                         Column(horizontalAlignment = Alignment.End) {
-                                            Text("Current Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                            Text("Harga Beli Saat Ini", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                             Text(item.costPrice.formatRp(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                                         }
                                     }
@@ -915,7 +990,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                         }
 
                         item {
-                            Text("Movement Logs", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
+                            Text("Log Pergerakan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         items(stockHistory) { log ->
@@ -934,10 +1009,13 @@ fun WarehouseScreen(padding: PaddingValues) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 when(log.type) { 
-                                                    "receive" -> "Received Purchase"
-                                                    "sale" -> "Sale" 
-                                                    "purchase" -> "Received Purchase"
-                                                    else -> log.type.replaceFirstChar { it.uppercase() } 
+                                                    "receive" -> "Terima Pembelian"
+                                                    "sale" -> "Penjualan" 
+                                                    "purchase" -> "Terima Pembelian"
+                                                    else -> when(log.type) {
+                                                        "adjustment" -> "Penyesuaian"
+                                                        else -> log.type.replaceFirstChar { it.uppercase() }
+                                                    }
                                                 },
                                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), 
                                                 color = TextPrimary
@@ -950,7 +1028,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                                 color = if (log.changeQty > 0) Success else if (log.changeQty < 0) Error else TextPrimary
                                             )
-                                            Text("Bal: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("Sisa: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                         }
                                     }
                                     
@@ -963,7 +1041,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("Buy Price", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                                            Text("Harga Beli", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                                             Text(
                                                 displayCost.formatRp(),
                                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
@@ -990,7 +1068,7 @@ fun WarehouseScreen(padding: PaddingValues) {
     ) {
         item {
             Text(
-                "Warehouse Management",
+                "Manajemen Gudang",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Primary
@@ -998,7 +1076,7 @@ fun WarehouseScreen(padding: PaddingValues) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Monitor inventory levels and manage stock",
+                "Pantau level inventaris dan kelola stok",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary
             )
@@ -1020,7 +1098,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Total Items", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+                        Text("Total Item", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
                         Text(
                             products.size.toString(),
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
@@ -1039,7 +1117,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Categories", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+                        Text("Kategori", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
                         Text(
                             products.mapNotNull { it.category }.distinct().size.toString(),
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
@@ -1070,8 +1148,8 @@ fun WarehouseScreen(padding: PaddingValues) {
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("No Warehouse User", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
-                            Text("Tap here to create login credentials for warehouse staff.", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text("Tidak Ada Pengguna Gudang", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
+                            Text("Ketuk di sini untuk membuat kredensial login staf gudang.", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         }
                     }
                 }
@@ -1091,7 +1169,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                     ) {
                         Icon(Icons.Filled.Inventory, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No warehouse items yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Belum ada item gudang", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                     }
                 }
             }
@@ -1130,7 +1208,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                             color = TextPrimary
                         )
                         Text(
-                            "${item.category ?: "N/A"} | SKU: ${item.sku ?: "-"}",
+                            "${item.category ?: "-"} | SKU: ${item.sku ?: "-"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextTertiary
                         )
@@ -1141,7 +1219,7 @@ fun WarehouseScreen(padding: PaddingValues) {
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = Primary
                         )
-                        Text("Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                        Text("Harga Beli", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                     }
                 }
             }
@@ -1176,7 +1254,7 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Settings",
+                "Pengaturan",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Primary
@@ -1184,7 +1262,7 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Manage application settings and preferences",
+                "Kelola pengaturan dan preferensi aplikasi",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary
             )
@@ -1199,7 +1277,7 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Account", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
+                    Text("Akun", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1220,7 +1298,7 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                                 color = TextPrimary
                             )
                             Text(
-                                "Role: ${sessionManager.getRole() ?: "admin"}",
+                                "Peran: ${sessionManager.getRole() ?: "admin"}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextTertiary
                             )
@@ -1264,7 +1342,7 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
             ) {
                 Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Logout", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
+                Text("Keluar", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
             }
         }
 
@@ -1280,10 +1358,13 @@ fun AdminMetricCard(
     title: String,
     value: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clickable { onClick() } else Modifier
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -1292,14 +1373,29 @@ fun AdminMetricCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Primary.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(icon, contentDescription = title, tint = Primary, modifier = Modifier.size(18.dp))
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Primary.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = title, tint = Primary, modifier = Modifier.size(18.dp))
+                }
+                
+                if (onClick != null) {
+                    Icon(
+                        Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        tint = TextTertiary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -1324,7 +1420,7 @@ fun RevenueChart(data: List<DailyRevenueDto>) {
             modifier = Modifier.fillMaxWidth().height(180.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("No revenue data for chart", color = TextTertiary, style = MaterialTheme.typography.bodyMedium)
+            Text("Tidak ada data pendapatan untuk grafik", color = TextTertiary, style = MaterialTheme.typography.bodyMedium)
         }
         return
     }
@@ -1406,6 +1502,7 @@ fun OutletAnalyticsScreen(
     var endDate by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     val dateRangePickerState = rememberDateRangePickerState()
+    var selectedMetric by remember { mutableStateOf<MetricDetailType?>(null) }
 
     fun fetchStats() {
         scope.launch {
@@ -1440,13 +1537,13 @@ fun OutletAnalyticsScreen(
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Stock History (Admin)", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text("Riwayat Stok (Admin)", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                             Text(item.name, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                         }
                     },
                     navigationIcon = {
                         IconButton(onClick = { selectedStockItem = null }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -1464,7 +1561,7 @@ fun OutletAnalyticsScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Filled.History, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("No stock history found", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Text("Riwayat stok tidak ditemukan", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                         }
                     }
                 } else {
@@ -1481,7 +1578,7 @@ fun OutletAnalyticsScreen(
                                 colors = CardDefaults.cardColors(containerColor = Surface)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Current Product Info", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                    Text("Informasi Produk Saat Ini", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Column(modifier = Modifier.weight(1f)) {
@@ -1489,7 +1586,7 @@ fun OutletAnalyticsScreen(
                                             Text(item.sku ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                         }
                                         Column(horizontalAlignment = Alignment.End) {
-                                            Text("Current Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                            Text("Harga Beli Saat Ini", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                             Text(item.costPrice.formatRp(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                                         }
                                     }
@@ -1498,7 +1595,7 @@ fun OutletAnalyticsScreen(
                         }
 
                         item {
-                            Text("Movement Logs", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
+                            Text("Log Pergerakan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         items(stockHistory) { log ->
@@ -1517,10 +1614,13 @@ fun OutletAnalyticsScreen(
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 when(log.type) { 
-                                                    "receive" -> "Received Purchase"
-                                                    "sale" -> "Sale" 
-                                                    "purchase" -> "Received Purchase"
-                                                    else -> log.type.replaceFirstChar { it.uppercase() } 
+                                                    "receive" -> "Terima Pembelian"
+                                                    "sale" -> "Penjualan" 
+                                                    "purchase" -> "Terima Pembelian"
+                                                    else -> when(log.type) {
+                                                        "adjustment" -> "Penyesuaian"
+                                                        else -> log.type.replaceFirstChar { it.uppercase() }
+                                                    }
                                                 },
                                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), 
                                                 color = TextPrimary
@@ -1533,7 +1633,7 @@ fun OutletAnalyticsScreen(
                                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                                 color = if (log.changeQty > 0) Success else if (log.changeQty < 0) Error else TextPrimary
                                             )
-                                            Text("Bal: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                            Text("Sisa: ${log.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                         }
                                     }
                                     
@@ -1546,7 +1646,7 @@ fun OutletAnalyticsScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("Buy Price", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                                            Text("Harga Beli", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                                             Text(
                                                 displayCost.formatRp(),
                                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
@@ -1591,7 +1691,7 @@ fun OutletAnalyticsScreen(
             DateRangePicker(
                 state = dateRangePickerState,
                 modifier = Modifier.height(500.dp),
-                title = { Text("Select Date Range", modifier = Modifier.padding(16.dp)) }
+                title = { Text("Pilih Rentang Tanggal", modifier = Modifier.padding(16.dp)) }
             )
         }
     }
@@ -1603,8 +1703,8 @@ fun OutletAnalyticsScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Outlet") },
-            text = { Text("Are you sure you want to delete \"${outlet.name}\"? This action cannot be undone.") },
+            title = { Text("Hapus Outlet") },
+            text = { Text("Apakah Anda yakin ingin menghapus \"${outlet.name}\"? Tindakan ini tidak dapat dibatalkan.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -1620,10 +1720,10 @@ fun OutletAnalyticsScreen(
                         }
                     },
                     enabled = !isDeleting
-                ) { Text("Delete", color = Error) }
+                ) { Text("Hapus", color = Error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Batal") }
             }
         )
     }
@@ -1633,18 +1733,18 @@ fun OutletAnalyticsScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Analytics", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Analitik", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                         Text(outlet.name, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 actions = {
                     IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete Outlet", tint = Error)
+                        Icon(Icons.Filled.Delete, contentDescription = "Hapus Outlet", tint = Error)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
@@ -1667,7 +1767,7 @@ fun OutletAnalyticsScreen(
                     Text(errorMessage ?: "Unknown error", color = TextSecondary)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { fetchStats() }, colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                        Text("Retry")
+                        Text("Coba Lagi")
                     }
                 }
             }
@@ -1695,7 +1795,7 @@ fun OutletAnalyticsScreen(
                     Icon(Icons.Filled.DateRange, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (startDate != null && endDate != null) "$startDate  →  $endDate" else "All Time — Tap to filter",
+                        if (startDate != null && endDate != null) "$startDate  →  $endDate" else "Semua Waktu — Ketuk untuk filter",
                         color = if (startDate != null) Primary else TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -1716,11 +1816,11 @@ fun OutletAnalyticsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Total Revenue", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            Text("Total Pendapatan", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                             Text(validStats.revenue.formatRp(), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("${validStats.totalSales} sales", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            Text("${validStats.totalSales} penjualan", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                             Text(
                                 String.format(Locale.ROOT, "%.1f%% margin", validStats.sellingMargin),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -1734,20 +1834,20 @@ fun OutletAnalyticsScreen(
             // Metric cards
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AdminMetricCard(title = "Gross Profit", value = validStats.grossProfit.formatRp(), icon = Icons.Filled.AccountBalanceWallet, modifier = Modifier.weight(1f))
-                    AdminMetricCard(title = "Net Profit", value = validStats.netProfit.formatRp(), icon = Icons.Filled.TrendingUp, modifier = Modifier.weight(1f))
+                    AdminMetricCard(title = "Laba Kotor", value = validStats.grossProfit.formatRp(), icon = Icons.Filled.AccountBalanceWallet, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.GROSS_PROFIT })
+                    AdminMetricCard(title = "Laba Bersih", value = validStats.netProfit.formatRp(), icon = Icons.Filled.TrendingUp, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.NET_PROFIT })
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AdminMetricCard(title = "COGS", value = validStats.cogs.formatRp(), icon = Icons.Filled.ShoppingCart, modifier = Modifier.weight(1f))
-                    AdminMetricCard(title = "Expenses", value = validStats.expenses.formatRp(), icon = Icons.Filled.MoneyOff, modifier = Modifier.weight(1f))
+                    AdminMetricCard(title = "HPP (COGS)", value = validStats.cogs.formatRp(), icon = Icons.Filled.ShoppingCart, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.COGS })
+                    AdminMetricCard(title = "Pengeluaran", value = validStats.expenses.formatRp(), icon = Icons.Filled.MoneyOff, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.EXPENSES })
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AdminMetricCard(title = "Revenue", value = validStats.revenue.formatRp(), icon = Icons.Filled.AttachMoney, modifier = Modifier.weight(1f))
-                    AdminMetricCard(title = "Selling Margin", value = String.format(Locale.ROOT, "%.2f%%", validStats.sellingMargin), icon = Icons.Filled.Percent, modifier = Modifier.weight(1f))
+                    AdminMetricCard(title = "Pendapatan", value = validStats.revenue.formatRp(), icon = Icons.Filled.AttachMoney, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.REVENUE })
+                    AdminMetricCard(title = "Margin Penjualan", value = String.format(Locale.ROOT, "%.2f%%", validStats.sellingMargin), icon = Icons.Filled.Percent, modifier = Modifier.weight(1f), onClick = { selectedMetric = MetricDetailType.MARGIN })
                 }
             }
 
@@ -1762,7 +1862,7 @@ fun OutletAnalyticsScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Daily Revenue", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                            Text("Pendapatan Harian", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                             Spacer(modifier = Modifier.height(12.dp))
                             RevenueChart(chartData)
                         }
@@ -1774,7 +1874,7 @@ fun OutletAnalyticsScreen(
             val itemsData = validStats.outletItems.orEmpty()
             if (itemsData.isNotEmpty()) {
                 item {
-                    Text("Inventory Stock", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Stok Inventaris", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 }
                 items(itemsData) { item ->
                     Card(
@@ -1788,7 +1888,7 @@ fun OutletAnalyticsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(item.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                Text("${item.category ?: "N/A"} | SKU: ${item.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                Text("${item.category ?: "-"} | SKU: ${item.sku ?: "-"}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                             }
                             Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(end = 8.dp)) {
                                 Text(
@@ -1796,7 +1896,7 @@ fun OutletAnalyticsScreen(
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = Primary
                                 )
-                                Text("Cost Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                Text("Harga Beli", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                             }
                             Icon(Icons.Filled.KeyboardArrowRight, null, tint = TextTertiary, modifier = Modifier.size(20.dp))
                         }
@@ -1806,5 +1906,388 @@ fun OutletAnalyticsScreen(
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
+
+        selectedMetric?.let { metricType ->
+            MetricDetailScreen(
+                type = metricType,
+                data = AdminDashboardDto(
+                    totalRevenue = validStats.revenue,
+                    totalCogs = validStats.cogs,
+                    grossProfit = validStats.grossProfit,
+                    expenses = validStats.expenses,
+                    netProfit = validStats.netProfit,
+                    sellingMargin = validStats.sellingMargin,
+                    recentSales = validStats.salesList,
+                    expensesList = validStats.expensesList,
+                    totalSales = validStats.revenue // workaround
+                ),
+                onBack = { selectedMetric = null }
+            )
+        }
+    }
+}
+// ─── Metric Detail Screen (Full Screen) ────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MetricDetailScreen(
+    type: MetricDetailType,
+    data: AdminDashboardDto,
+    onBack: () -> Unit
+) {
+    val title = when (type) {
+        MetricDetailType.REVENUE -> "Detail Pendapatan"
+        MetricDetailType.COGS -> "Detail HPP (COGS)"
+        MetricDetailType.GROSS_PROFIT -> "Detail Laba Kotor"
+        MetricDetailType.EXPENSES -> "Detail Pengeluaran"
+        MetricDetailType.NET_PROFIT -> "Detail Laba Bersih"
+        MetricDetailType.MARGIN -> "Detail Margin Penjualan"
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+            )
+        },
+        containerColor = Background
+    ) { padding ->
+        var selectedSaleByDialog by remember { mutableStateOf<SaleDto?>(null) }
+        var selectedExpenseByDialog by remember { mutableStateOf<ExpenseDto?>(null) }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            // Summary Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Primary),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            when (type) {
+                                MetricDetailType.REVENUE -> "Total Pendapatan"
+                                MetricDetailType.COGS -> "Total HPP"
+                                MetricDetailType.GROSS_PROFIT -> "Total Laba Kotor"
+                                MetricDetailType.EXPENSES -> "Total Pengeluaran"
+                                MetricDetailType.NET_PROFIT -> "Total Laba Bersih"
+                                MetricDetailType.MARGIN -> "Margin Penjualan"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            when (type) {
+                                MetricDetailType.REVENUE -> data.totalRevenue.formatRp()
+                                MetricDetailType.COGS -> data.totalCogs.formatRp()
+                                MetricDetailType.GROSS_PROFIT -> data.grossProfit.formatRp()
+                                MetricDetailType.EXPENSES -> data.expenses.formatRp()
+                                MetricDetailType.NET_PROFIT -> data.netProfit.formatRp()
+                                MetricDetailType.MARGIN -> String.format(Locale.ROOT, "%.1f%%", data.sellingMargin)
+                            },
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+            // Breakdown Sections
+            item {
+                Text(
+                    when(type) {
+                        MetricDetailType.REVENUE -> "Daftar Transaksi Penjualan"
+                        MetricDetailType.COGS -> "Daftar Modal per Item Terjual"
+                        MetricDetailType.EXPENSES -> "Daftar Biaya Operasional"
+                        else -> "Rincian Perhitungan"
+                    },
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+            }
+
+            when (type) {
+                MetricDetailType.REVENUE -> {
+                    val sales = data.recentSales.orEmpty()
+                    if (sales.isEmpty()) {
+                        item { EmptyDetailState("Tidak ada transaksi penjualan") }
+                    } else {
+                        items(sales) { sale ->
+                            SaleDetailRow(sale, onClick = { selectedSaleByDialog = sale })
+                        }
+                    }
+                }
+                MetricDetailType.EXPENSES -> {
+                    val expenses = data.expensesList.orEmpty()
+                    if (expenses.isEmpty()) {
+                        item { EmptyDetailState("Tidak ada catatan pengeluaran") }
+                    } else {
+                        items(expenses) { expense ->
+                            ExpenseDetailRow(expense, onClick = { selectedExpenseByDialog = expense })
+                        }
+                    }
+                }
+                MetricDetailType.COGS -> {
+                    val sales = data.recentSales.orEmpty()
+                    if (sales.isEmpty()) {
+                        item { EmptyDetailState("Tidak ada data HPP") }
+                    } else {
+                        items(sales) { sale ->
+                            SaleCogsRow(sale, onClick = { selectedSaleByDialog = sale })
+                        }
+                    }
+                }
+                MetricDetailType.GROSS_PROFIT -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                BreakdownRow("Total Pendapatan", data.totalRevenue.formatRp())
+                                BreakdownRow("Total HPP", "- ${data.totalCogs.formatRp()}", color = Error)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Background, thickness = 1.dp)
+                                BreakdownRow("Laba Kotor", data.grossProfit.formatRp(), isBold = true)
+                            }
+                        }
+                    }
+                }
+                MetricDetailType.NET_PROFIT -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                BreakdownRow("Laba Kotor", data.grossProfit.formatRp())
+                                BreakdownRow("Beban Pengeluaran", "- ${data.expenses.formatRp()}", color = Error)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Background, thickness = 1.dp)
+                                BreakdownRow("Laba Bersih", data.netProfit.formatRp(), isBold = true)
+                            }
+                        }
+                    }
+                }
+                MetricDetailType.MARGIN -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Surface)) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                BreakdownRow("Laba Kotor", data.grossProfit.formatRp())
+                                BreakdownRow("Total Pendapatan", data.totalRevenue.formatRp())
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Background, thickness = 1.dp)
+                                BreakdownRow("Persentase Margin", String.format(Locale.ROOT, "%.2f%%", data.sellingMargin), isBold = true)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+        }
+
+        selectedSaleByDialog?.let { sale ->
+            TransactionDetailDialog(sale = sale, onDismiss = { selectedSaleByDialog = null })
+        }
+        selectedExpenseByDialog?.let { expense ->
+            ExpenseDetailDialog(expense = expense, onDismiss = { selectedExpenseByDialog = null })
+        }
+    }
+}
+
+@Composable
+fun EmptyDetailState(msg: String) {
+    Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+        Text(msg, style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+    }
+}
+
+@Composable
+fun SaleDetailRow(sale: SaleDto, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text(sale.receiptNumber ?: "No Receipt", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = Primary)
+                    Text(sale.saleDate ?: "", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                }
+                Text(sale.totalAmount.formatRp(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Success)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("${sale.customerName ?: "Pelanggan Umum"} | ${sale.paymentMethod}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        }
+    }
+}
+
+@Composable
+fun SaleCogsRow(sale: SaleDto, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(sale.receiptNumber ?: "No Receipt", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = Primary)
+            Text(sale.saleDate ?: "", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Background, thickness = 1.dp)
+            sale.items.forEach { item ->
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.productName ?: "Item Terhapus", style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                        Text("${item.quantity} x ${item.costPrice?.formatRp() ?: "-"}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    }
+                    val totalItemCogs = (item.costPrice ?: 0.0) * item.quantity
+                    Text(totalItemCogs.formatRp(), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpenseDetailRow(expense: ExpenseDto, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Error.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.MoneyOff, null, tint = Error, modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(expense.description, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                Text("${expense.category} | ${expense.expenseDate ?: ""}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+            }
+            Text(expense.amount.formatRp(), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = Error)
+        }
+    }
+}
+
+@Composable
+fun TransactionDetailDialog(sale: SaleDto, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup", color = Primary) } },
+        title = {
+            Column {
+                Text("Detail Transaksi", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text(sale.receiptNumber ?: "-", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                DetailItemRow("Tanggal", sale.saleDate ?: "-")
+                DetailItemRow("Pelanggan", sale.customerName ?: "Pelanggan Umum")
+                DetailItemRow("Telepon", sale.customerPhone ?: "-")
+                DetailItemRow("Metode Bayar", sale.paymentMethod)
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Background)
+
+                Text("Daftar Item", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                sale.items.forEach { item ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(item.productName ?: "Item Terhapus", style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                            Text("${item.quantity} x ${item.unitPrice.formatRp()}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        }
+                        Text(item.totalPrice.formatRp(), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Background)
+
+                val showSubtotal = sale.taxAmount > 0 || sale.discountAmount > 0
+                if (showSubtotal) {
+                    DetailItemRow("Subtotal", sale.subtotal.formatRp())
+                }
+                if (sale.taxAmount > 0) {
+                    DetailItemRow("Pajak", sale.taxAmount.formatRp())
+                }
+                if (sale.discountAmount > 0) {
+                    DetailItemRow("Diskon", "- ${sale.discountAmount.formatRp()}", color = Error)
+                }
+                DetailItemRow("Total Akhir", sale.totalAmount.formatRp(), isBold = true)
+            }
+        },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Surface
+    )
+}
+
+@Composable
+fun ExpenseDetailDialog(expense: ExpenseDto, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup", color = Primary) } },
+        title = { Text("Detail Pengeluaran", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                DetailItemRow("Deskripsi", expense.description)
+                DetailItemRow("Kategori", expense.category)
+                DetailItemRow("Jumlah", expense.amount.formatRp(), isBold = true, valueColor = Error)
+                DetailItemRow("Tanggal", expense.expenseDate ?: "-")
+                DetailItemRow("Dibuat Oleh", expense.createdBy ?: "-")
+            }
+        },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Surface
+    )
+}
+
+@Composable
+fun DetailItemRow(
+    label: String,
+    value: String,
+    isBold: Boolean = false,
+    color: Color = TextSecondary,
+    valueColor: Color = TextPrimary
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = color)
+        Text(
+            value,
+            style = if (isBold) MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodySmall,
+            color = if (isBold && valueColor == TextPrimary) Primary else valueColor
+        )
+    }
+}
+
+@Composable
+fun BreakdownRow(
+    label: String,
+    value: String,
+    color: Color = TextPrimary,
+    isBold: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        Text(
+            value,
+            style = if (isBold) MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodyMedium,
+            color = if (isBold && color == TextPrimary) Primary else color
+        )
     }
 }

@@ -60,18 +60,63 @@ func GetAdminDashboard(c *gin.Context) {
 	cursor.All(c, &products)
 
 	costMap := make(map[primitive.ObjectID]float64)
+	nameMap := make(map[primitive.ObjectID]string)
 	for _, p := range products {
 		costMap[p.ID] = p.CostPrice
+		nameMap[p.ID] = p.Name
 	}
 
-	for _, sale := range sales {
-		for _, item := range sale.Items {
-			totalCOGS += costMap[item.ProductID] * float64(item.Quantity)
+	type EnrichedSaleItem struct {
+		models.SaleItem
+		ProductName string  `json:"product_name"`
+		CostPrice   float64 `json:"cost_price"`
+	}
+	type EnrichedSale struct {
+		models.Sale
+		Items []EnrichedSaleItem `json:"items"`
+	}
+
+	enrichedSales := make([]EnrichedSale, len(sales))
+	for i, sale := range sales {
+		enrichedItems := make([]EnrichedSaleItem, len(sale.Items))
+		for j, item := range sale.Items {
+			itemCost := item.CostPrice
+			itemName := item.ProductName
+			if itemCost == 0 {
+				itemCost = costMap[item.ProductID]
+			}
+			if itemName == "" {
+				itemName = nameMap[item.ProductID]
+				if itemName == "" {
+					itemName = "Item Terhapus"
+				}
+			}
+			totalCOGS += itemCost * float64(item.Quantity)
+			enrichedItems[j] = EnrichedSaleItem{
+				SaleItem:    item,
+				ProductName: itemName,
+				CostPrice:   itemCost,
+			}
+		}
+		enrichedSales[i] = EnrichedSale{
+			Sale:  sale,
+			Items: enrichedItems,
 		}
 	}
 
 	grossProfit := totalRevenue - totalCOGS
+
+	// Fetch actual expenses
+	expensesCollection := database.GetCollection("expenses")
+	expensesCursor, _ := expensesCollection.Find(c, dateFilter)
+	var allExpenses []models.Expense
+	expensesCursor.All(c, &allExpenses)
+
 	expenses := 0.0
+	for _, e := range allExpenses {
+		expenses += e.Amount
+	}
+
 	netProfit := grossProfit - expenses
 	var sellingMargin float64
 	if totalRevenue > 0 {
@@ -140,9 +185,10 @@ func GetAdminDashboard(c *gin.Context) {
 		"selling_margin":   sellingMargin,
 		"expenses":         expenses,
 		"daily_revenue":    dailyRevenue,
-		"recent_sales":     recentSales,
+		"recent_sales":     enrichedSales, // Include enriched sales for breakdown
 		"recent_purchases": recentPurchases,
 		"outlets":          outletsList,
+		"expenses_list":    allExpenses,
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
@@ -388,18 +434,73 @@ func GetOutletStats(c *gin.Context) {
 	cursor.All(c, &products)
 
 	costMap := make(map[primitive.ObjectID]float64)
+	nameMap := make(map[primitive.ObjectID]string)
 	for _, p := range products {
 		costMap[p.ID] = p.CostPrice
+		nameMap[p.ID] = p.Name
 	}
 
-	for _, sale := range sales {
-		for _, item := range sale.Items {
-			totalCOGS += costMap[item.ProductID] * float64(item.Quantity)
+	type EnrichedSaleItem struct {
+		models.SaleItem
+		ProductName string  `json:"product_name"`
+		CostPrice   float64 `json:"cost_price"`
+	}
+	type EnrichedSale struct {
+		models.Sale
+		Items []EnrichedSaleItem `json:"items"`
+	}
+
+	enrichedSales := make([]EnrichedSale, len(sales))
+	for i, sale := range sales {
+		enrichedItems := make([]EnrichedSaleItem, len(sale.Items))
+		for j, item := range sale.Items {
+			itemCost := item.CostPrice
+			itemName := item.ProductName
+			if itemCost == 0 {
+				itemCost = costMap[item.ProductID]
+			}
+			if itemName == "" {
+				itemName = nameMap[item.ProductID]
+				if itemName == "" {
+					itemName = "Item Terhapus"
+				}
+			}
+			totalCOGS += itemCost * float64(item.Quantity)
+			enrichedItems[j] = EnrichedSaleItem{
+				SaleItem:    item,
+				ProductName: itemName,
+				CostPrice:   itemCost,
+			}
+		}
+		enrichedSales[i] = EnrichedSale{
+			Sale:  sale,
+			Items: enrichedItems,
 		}
 	}
 
 	grossProfit := totalRevenue - totalCOGS
+
+	// Fetch actual expenses for this outlet
+	expensesCollection := database.GetCollection("expenses")
+	expenseFilter := bson.M{"outlet_id": objID}
+	if startDateStr != "" && endDateStr != "" {
+		startDate, err1 := time.Parse("2006-01-02", startDateStr)
+		endDate, err2 := time.Parse("2006-01-02", endDateStr)
+		if err1 == nil && err2 == nil {
+			endDate = endDate.Add(24*time.Hour - time.Second)
+			expenseFilter["expense_date"] = bson.M{"$gte": startDate, "$lte": endDate}
+		}
+	}
+
+	expensesCursor, _ := expensesCollection.Find(c, expenseFilter)
+	var allExpenses []models.Expense
+	expensesCursor.All(c, &allExpenses)
+
 	expenses := 0.0
+	for _, e := range allExpenses {
+		expenses += e.Amount
+	}
+
 	netProfit := grossProfit - expenses
 
 	var sellingMargin float64
@@ -434,6 +535,8 @@ func GetOutletStats(c *gin.Context) {
 		"daily_revenue":  dailyRevenue,
 		"total_sales":    len(sales),
 		"outlet_items":   allOutletItems,
+		"sales_list":     enrichedSales,
+		"expenses_list":  allExpenses,
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{

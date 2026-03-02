@@ -61,10 +61,10 @@ fun WarehouseDashboard(
                 NavigationBar(containerColor = Surface, contentColor = TextPrimary, modifier = Modifier.height(80.dp)) {
                     listOf(
                         Triple(WarehouseScreen.DASHBOARD, Icons.Filled.Dashboard, "Dashboard"),
-                        Triple(WarehouseScreen.INVENTORY, Icons.Filled.Inventory, "Inventory"),
-                        Triple(WarehouseScreen.PURCHASING, Icons.Filled.ShoppingCart, "Purchasing"),
-                        Triple(WarehouseScreen.INVOICING, Icons.Filled.Receipt, "Invoicing"),
-                        Triple(WarehouseScreen.SETTINGS, Icons.Filled.Settings, "Settings")
+                        Triple(WarehouseScreen.INVENTORY, Icons.Filled.Inventory, "Stok"),
+                        Triple(WarehouseScreen.PURCHASING, Icons.Filled.ShoppingCart, "Pembelian"),
+                        Triple(WarehouseScreen.INVOICING, Icons.Filled.Receipt, "Tagihan"),
+                        Triple(WarehouseScreen.SETTINGS, Icons.Filled.Settings, "Pengaturan")
                     ).forEach { (screen, icon, label) ->
                         NavigationBarItem(
                             icon = { Icon(icon, label, modifier = Modifier.size(20.dp)) },
@@ -159,29 +159,29 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
     ) {
         item {
             Text(
-                "Warehouse Dashboard",
+                "Dashboard Gudang",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                 ),
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Monitor warehouse operations", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text("Pantau operasional gudang", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
 
         // Metrics
         item {
-            Text("Overview", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text("Ringkasan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 WarehouseMetricCard(
-                    title = "Total Items",
+                    title = "Total Produk",
                     value = (d?.totalItems ?: 0).toString(),
                     icon = Icons.Filled.Inventory,
                     modifier = Modifier.weight(1f)
                 )
                 WarehouseMetricCard(
-                    title = "Pending Invoices",
+                    title = "Tagihan Menunggu",
                     value = (d?.pendingInvoices ?: 0).toString(),
                     icon = Icons.Filled.Receipt,
                     modifier = Modifier.weight(1f)
@@ -190,13 +190,13 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 WarehouseMetricCard(
-                    title = "Low Stock",
+                    title = "Stok Rendah",
                     value = (d?.lowStockItems ?: 0).toString(),
                     icon = Icons.Filled.Warning,
                     modifier = Modifier.weight(1f)
                 )
                 WarehouseMetricCard(
-                    title = "Stock Value",
+                    title = "Nilai Stok",
                     value = "${(d?.totalStockValue ?: 0.0).formatRp()}",
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
                     modifier = Modifier.weight(1f)
@@ -209,7 +209,7 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
         if (recentPurchases.isNotEmpty()) {
             item {
                 Text(
-                    "Recent Purchases",
+                    "Pembelian Terbaru",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = TextPrimary
                 )
@@ -237,7 +237,7 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
                                 color = TextPrimary
                             )
                             Text(
-                                "${purchase.items.size} items - ${purchase.status}",
+                                "${purchase.items.size} produk - ${when(purchase.status) { "received" -> "Diterima"; "pending" -> "Menunggu"; else -> purchase.status }}",
                                 style = MaterialTheme.typography.bodySmall, color = TextTertiary
                             )
                         }
@@ -256,7 +256,7 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
         if (recentInvoices.isNotEmpty()) {
             item {
                 Text(
-                    "Recent Invoices",
+                    "Tagihan Terbaru",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = TextPrimary
                 )
@@ -284,7 +284,7 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
                                 color = TextPrimary
                             )
                             Text(
-                                "${invoice.status} - ${invoice.items.size} items",
+                                "${when(invoice.status) { "paid" -> "Lunas"; "pending" -> "Menunggu"; else -> invoice.status }} - ${invoice.items.size} produk",
                                 style = MaterialTheme.typography.bodySmall, color = TextTertiary
                             )
                         }
@@ -413,21 +413,21 @@ fun WarehouseInventoryListScreen(
             ) {
                 Column {
                     Text(
-                        "Inventory",
+                        "Inventaris",
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                         ),
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Manage warehouse stock", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text("Kelola stok gudang", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 }
                 FloatingActionButton(
                     onClick = onAddProduct,
                     containerColor = Primary, contentColor = Color.White,
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Filled.Add, "Add Item")
+                    Icon(Icons.Filled.Add, "Tambah Produk")
                 }
             }
         }
@@ -442,7 +442,7 @@ fun WarehouseInventoryListScreen(
                     colors = CardDefaults.cardColors(containerColor = Surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Total Items", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Total Produk", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             products.size.toString(),
@@ -458,7 +458,7 @@ fun WarehouseInventoryListScreen(
                     colors = CardDefaults.cardColors(containerColor = Surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Categories", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Kategori", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             products.mapNotNull { it.category }.distinct().size.toString(),
@@ -484,8 +484,8 @@ fun WarehouseInventoryListScreen(
                     ) {
                         Icon(Icons.Filled.Inventory, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("No warehouse items yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                        Text("Add items to get started", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Belum ada produk di gudang", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Tambah produk untuk memulai", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                     }
                 }
             }
@@ -514,7 +514,7 @@ fun WarehouseInventoryListScreen(
                             color = TextPrimary
                         )
                         Text(
-                            "${item.category ?: "N/A"} | SKU: ${item.sku ?: "-"}",
+                            "${item.category ?: "-"} | SKU: ${item.sku ?: "-"}",
                             style = MaterialTheme.typography.bodySmall, color = TextTertiary
                         )
                     }
@@ -524,7 +524,7 @@ fun WarehouseInventoryListScreen(
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = Primary
                         )
-                        Text("Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                        Text("Harga Beli", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                     }
                 }
             }
@@ -584,13 +584,13 @@ fun WarehouseStockHistoryScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Stock History", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("Riwayat Stok", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                         Text(product.name, style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -608,7 +608,7 @@ fun WarehouseStockHistoryScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.History, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("No stock history found", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Riwayat stok tidak ditemukan", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                     }
                 }
             } else {
@@ -625,7 +625,7 @@ fun WarehouseStockHistoryScreen(
                             colors = CardDefaults.cardColors(containerColor = Surface)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Current Product Info", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                Text("Info Produk Saat Ini", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column(modifier = Modifier.weight(1f)) {
@@ -633,7 +633,7 @@ fun WarehouseStockHistoryScreen(
                                         Text(product.sku ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("Current Buy Price", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                        Text("Harga Beli Saat Ini", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                         Text(product.costPrice.formatRp(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                                     }
                                 }
@@ -642,7 +642,7 @@ fun WarehouseStockHistoryScreen(
                     }
 
                     item {
-                        Text("Movement Logs", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
+                        Text("Log Mutasi", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp))
                     }
 
                     items(historyData!!) { history ->
@@ -670,10 +670,10 @@ fun WarehouseStockHistoryScreen(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             when(history.type) {
-                                                "initial" -> "Initial Stock"
-                                                "purchase" -> "Received Purchase"
-                                                "invoice" -> "Invoice Shipped"
-                                                "adjustment" -> "Stock Adjustment"
+                                                "initial" -> "Stok Awal"
+                                                "purchase" -> "Pembelian Diterima"
+                                                "invoice" -> "Tagihan Dikirim"
+                                                "adjustment" -> "Penyesuaian Stok"
                                                 else -> history.type.replaceFirstChar { it.uppercase() }
                                             },
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
@@ -687,7 +687,7 @@ fun WarehouseStockHistoryScreen(
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = amountColor
                                         )
-                                        Text("Bal: ${history.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                        Text("Saldo: ${history.balance}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                     }
                                 }
                                 
@@ -700,7 +700,7 @@ fun WarehouseStockHistoryScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Buy Price", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                                        Text("Harga Beli", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                                         Text(
                                             displayCost.formatRp(),
                                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
@@ -755,10 +755,10 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = TextPrimary)
                 }
                 Text(
-                    "Add New Product",
+                    "Tambah Produk Baru",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -774,14 +774,14 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
             ) {
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
-                        "Product Information",
+                        "Informasi Produk",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
 
                     OutlinedTextField(
                         value = productName, onValueChange = { productName = it },
-                        label = { Text("Product Name") },
+                        label = { Text("Nama Produk") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -808,7 +808,7 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                     ) {
                         OutlinedTextField(
                             value = category, onValueChange = { category = it },
-                            label = { Text("Category (Select or Type New)") },
+                            label = { Text("Kategori (Pilih atau Ketik Baru)") },
                             leadingIcon = { Icon(Icons.Filled.Category, contentDescription = "Category", tint = Primary) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                             modifier = Modifier.fillMaxWidth().menuAnchor(),
@@ -837,7 +837,7 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
 
                     OutlinedTextField(
                         value = description, onValueChange = { description = it },
-                        label = { Text("Description (Optional)") },
+                        label = { Text("Deskripsi (Opsional)") },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -900,7 +900,7 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                 if (isCreating) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
                 } else {
-                    Text("Add Product", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("Tambah Produk", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -995,21 +995,21 @@ fun WarehousePurchasesListScreen(
             ) {
                 Column {
                     Text(
-                        "Purchase Orders",
+                        "Pesanan Pembelian",
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                         ),
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Manage supplier orders", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text("Kelola pesanan ke pemasok", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 }
                 FloatingActionButton(
                     onClick = onAddPurchase,
                     containerColor = Primary, contentColor = Color.White,
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Filled.Add, "New Purchase")
+                    Icon(Icons.Filled.Add, "Pembelian Baru")
                 }
             }
         }
@@ -1025,7 +1025,7 @@ fun WarehousePurchasesListScreen(
                     Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.ShoppingCart, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("No purchases yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Belum ada pembelian", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                     }
                 }
             }
@@ -1062,7 +1062,7 @@ fun WarehousePurchasesListScreen(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                purchase.status.replaceFirstChar { it.uppercase() },
+                                when (purchase.status) { "pending" -> "Menunggu"; "received" -> "Diterima"; "cancelled" -> "Dibatalkan"; else -> purchase.status.replaceFirstChar { it.uppercase() } },
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = when (purchase.status) {
                                     "pending" -> Warning
@@ -1075,7 +1075,7 @@ fun WarehousePurchasesListScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        "${purchase.items.size} items",
+                        "${purchase.items.size} produk",
                         style = MaterialTheme.typography.bodySmall, color = TextTertiary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1125,10 +1125,10 @@ fun WarehousePurchaseDetailScreen(
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = TextPrimary)
                 }
                 Text(
-                    "Purchase Details",
+                    "Detail Pembelian",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -1145,7 +1145,7 @@ fun WarehousePurchaseDetailScreen(
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
-                            Text("Supplier", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                            Text("Pemasok", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                             Text(purchase.supplierName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                         }
                         Box(
@@ -1160,7 +1160,7 @@ fun WarehousePurchaseDetailScreen(
                                 ).padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                purchase.status.replaceFirstChar { it.uppercase() },
+                                when (purchase.status) { "pending" -> "Menunggu"; "received" -> "Diterima"; "cancelled" -> "Dibatalkan"; else -> purchase.status.replaceFirstChar { it.uppercase() } },
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = when (purchase.status) {
                                     "pending" -> Warning
@@ -1174,11 +1174,11 @@ fun WarehousePurchaseDetailScreen(
                     HorizontalDivider(color = DividerColor)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Date", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                            Text("Tanggal", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                             Text(purchase.purchaseDate?.take(10) ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Total Amount", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
+                            Text("Total Tagihan", style = MaterialTheme.typography.labelMedium, color = TextTertiary)
                             Text(purchase.totalAmount.formatRp(), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = Primary)
                         }
                     }
@@ -1187,7 +1187,7 @@ fun WarehousePurchaseDetailScreen(
         }
 
         item {
-            Text("Items Ordered", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+            Text("Item Pesanan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
         }
 
         items(purchase.items) { item ->
@@ -1221,10 +1221,10 @@ fun WarehousePurchaseDetailScreen(
                             val statusRes = repository.updatePurchaseStatus(purchase.id ?: "", "received")
                             isUpdating = false
                             if (statusRes is Resource.Success) {
-                                android.widget.Toast.makeText(context, "Purchase received successfully", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "Pembelian berhasil diterima", android.widget.Toast.LENGTH_SHORT).show()
                                 onStatusUpdated()
                             } else {
-                                android.widget.Toast.makeText(context, "Error updating status", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "Gagal memperbarui status", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -1236,9 +1236,9 @@ fun WarehousePurchaseDetailScreen(
                     if (isUpdating) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     } else {
-                        Icon(Icons.Filled.CheckCircle, "Receive", tint = Color.White)
+                        Icon(Icons.Filled.CheckCircle, "Terima", tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mark as Received", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Text("Tandai Telah Diterima", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
                     }
                 }
             }
@@ -1273,10 +1273,10 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = TextPrimary)
                 }
                 Text(
-                    "Create Purchase Order",
+                    "Buat Pesanan Pembelian",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -1291,10 +1291,10 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Supplier Info", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Info Pemasok", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                     OutlinedTextField(
                         value = supplierName, onValueChange = { supplierName = it },
-                        label = { Text("Supplier Name") },
+                        label = { Text("Nama Pemasok") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -1313,7 +1313,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Order Items", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text("Item Pesanan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 Button(
                     onClick = { showItemDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
@@ -1321,7 +1321,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 ) {
                     Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Item")
+                    Text("Tambah Item")
                 }
             }
         }
@@ -1339,8 +1339,8 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(itemName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                        Text("Qty: ${item.quantity} x ${item.unitCost.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
-                        Text("Current Stock: $stockInfo", style = MaterialTheme.typography.labelSmall, color = Primary)
+                        Text("Jml: ${item.quantity} x ${item.unitCost.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Stok Saat Ini: $stockInfo", style = MaterialTheme.typography.labelSmall, color = Primary)
                     }
                     Text(item.totalCost.formatRp(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
                 }
@@ -1389,7 +1389,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 if (isCreating) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
-                else Text("Create Purchase Order", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                else Text("Buat Pesanan Pembelian", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -1408,7 +1408,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                 tonalElevation = 6.dp
             ) {
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Add Purchase Item", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Tambah Item Pembelian", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
 
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         var itemExpanded by remember { mutableStateOf(false) }
@@ -1416,7 +1416,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                             OutlinedTextField(
                                 value = selectedItem?.name ?: "",
                                 onValueChange = {},
-                                label = { Text("Select Item") },
+                                label = { Text("Pilih Item") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = itemExpanded) },
                                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                                 readOnly = true,
@@ -1443,7 +1443,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                         }
                         OutlinedTextField(
                             value = quantity, onValueChange = { quantity = it },
-                            label = { Text("Quantity") },
+                            label = { Text("Jumlah") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -1453,7 +1453,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                         )
                         OutlinedTextField(
                             value = unitCost, onValueChange = { unitCost = it },
-                            label = { Text("Unit Cost (Rp)") },
+                            label = { Text("Harga Satuan (Rp)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -1465,7 +1465,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
 
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = { showItemDialog = false }) {
-                            Text("Cancel", color = TextSecondary)
+                            Text("Batal", color = TextSecondary)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Button(
@@ -1481,7 +1481,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                             colors = ButtonDefaults.buttonColors(containerColor = Primary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Add Item", fontWeight = FontWeight.SemiBold)
+                            Text("Tambah Item", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -1576,21 +1576,21 @@ fun WarehouseInvoicesListScreen(
             ) {
                 Column {
                     Text(
-                        "Invoicing",
+                        "Tagihan",
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                         ),
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Outlet invoices", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text("Tagihan outlet", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 }
                 FloatingActionButton(
                     onClick = onAddInvoice,
                     containerColor = Primary, contentColor = Color.White,
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Filled.Add, "New Invoice")
+                    Icon(Icons.Filled.Add, "Tagihan Baru")
                 }
             }
         }
@@ -1621,7 +1621,7 @@ fun WarehouseInvoicesListScreen(
                     colors = CardDefaults.cardColors(containerColor = Surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Pending", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Menunggu", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             invoices.count { it.status == "pending" }.toString(),
@@ -1644,7 +1644,7 @@ fun WarehouseInvoicesListScreen(
                     Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.Receipt, null, tint = TextTertiary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("No invoices yet", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                        Text("Belum ada tagihan", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                     }
                 }
             }
@@ -1681,7 +1681,7 @@ fun WarehouseInvoicesListScreen(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                invoice.status.replaceFirstChar { it.uppercase() },
+                                when (invoice.status) { "paid" -> "Lunas"; "pending" -> "Menunggu"; "overdue" -> "Terlambat"; else -> invoice.status.replaceFirstChar { it.uppercase() } },
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = when (invoice.status) {
                                     "paid" -> Success
@@ -1693,7 +1693,7 @@ fun WarehouseInvoicesListScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text("${invoice.items.size} items", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                    Text("${invoice.items.size} produk", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         invoice.totalAmount.formatRp(),
@@ -1748,9 +1748,9 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = TextPrimary)
                 }
-                Text("Create Invoice", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text("Buat Tagihan", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
             }
         }
 
@@ -1762,11 +1762,11 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Invoice Details", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Detail Tagihan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
 
                     OutlinedTextField(
                         value = invoiceNumber, onValueChange = { invoiceNumber = it },
-                        label = { Text("Invoice Number") },
+                        label = { Text("Nomor Tagihan") },
                         placeholder = { Text("e.g., INV-001") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -1780,7 +1780,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                     ExposedDropdownMenuBox(expanded = outletExpanded, onExpandedChange = { outletExpanded = !outletExpanded }) {
                         OutlinedTextField(
                             value = selectedOutletName, onValueChange = {},
-                            label = { Text("Select Outlet") },
+                            label = { Text("Pilih Outlet") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = outletExpanded) },
                             modifier = Modifier.fillMaxWidth().menuAnchor(),
                             readOnly = true,
@@ -1814,7 +1814,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Invoice Items", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text("Item Tagihan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 Button(
                     onClick = { showItemDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
@@ -1822,7 +1822,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 ) {
                     Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Item")
+                    Text("Tambah Item")
                 }
             }
         }
@@ -1838,7 +1838,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(itemName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                        Text("Qty: ${item.quantity} x ${item.unitPrice.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                        Text("Jml: ${item.quantity} x ${item.unitPrice.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                     }
                     Text(item.totalPrice.formatRp(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
                 }
@@ -1889,7 +1889,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 if (isCreating) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
-                else Text("Create Invoice", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                else Text("Buat Tagihan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -1908,7 +1908,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                 tonalElevation = 6.dp
             ) {
                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Add Invoice Item", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Tambah Item Tagihan", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
 
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         var itemExpanded by remember { mutableStateOf(false) }
@@ -1916,7 +1916,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                             OutlinedTextField(
                                 value = selectedItem?.name ?: "",
                                 onValueChange = {},
-                                label = { Text("Select Item") },
+                                label = { Text("Pilih Item") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = itemExpanded) },
                                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                                 readOnly = true, shape = RoundedCornerShape(14.dp),
@@ -1936,7 +1936,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                         }
                         OutlinedTextField(
                             value = quantity, onValueChange = { quantity = it },
-                            label = { Text("Quantity") },
+                            label = { Text("Jumlah") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -1946,7 +1946,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                         )
                         OutlinedTextField(
                             value = unitPrice, onValueChange = { unitPrice = it },
-                            label = { Text("Unit Price (Rp)") },
+                            label = { Text("Harga Satuan (Rp)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -1958,7 +1958,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
 
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = { showItemDialog = false }) {
-                            Text("Cancel", color = TextSecondary)
+                            Text("Batal", color = TextSecondary)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Button(
@@ -1974,7 +1974,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                             colors = ButtonDefaults.buttonColors(containerColor = Primary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Add Item", fontWeight = FontWeight.SemiBold)
+                            Text("Tambah Item", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -1996,14 +1996,14 @@ fun WarehouseSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
     ) {
         item {
             Text(
-                "Settings",
+                "Pengaturan",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                 ),
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Account and app settings", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text("Akun dan pengaturan aplikasi", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
 
         item {
@@ -2028,12 +2028,12 @@ fun WarehouseSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(
-                                sessionManager.getUsername() ?: "Warehouse User",
+                                sessionManager.getUsername() ?: "Pengguna Gudang",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = TextPrimary
                             )
                             Text(
-                                "Role: ${sessionManager.getRole() ?: "warehouse"}",
+                                "Peran: ${sessionManager.getRole() ?: "gudang"}",
                                 style = MaterialTheme.typography.bodySmall, color = TextTertiary
                             )
                         }
@@ -2054,7 +2054,7 @@ fun WarehouseSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Logout", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                        Text("Keluar", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
                     }
                 }
             }
@@ -2069,7 +2069,7 @@ fun WarehouseSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Server", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                    Text("Connected to: ${RetrofitClient.BASE_URL}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                    Text("Terhubung ke: ${RetrofitClient.BASE_URL}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                 }
             }
         }
@@ -2111,13 +2111,13 @@ fun WarehouseInvoiceDetailsScreen(
             TopAppBar(
                 title = { 
                     Column {
-                        Text("Invoice Details", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("Detail Tagihan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                         Text(invoice.invoiceNumber, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -2161,7 +2161,7 @@ fun WarehouseInvoiceDetailsScreen(
                                             .padding(horizontal = 10.dp, vertical = 6.dp)
                                     ) {
                                         Text(
-                                            invoice.status.replaceFirstChar { it.uppercase() },
+                                            when (invoice.status) { "paid" -> "Lunas"; "pending" -> "Menunggu"; "overdue" -> "Terlambat"; else -> invoice.status.replaceFirstChar { it.uppercase() } },
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                             color = when (invoice.status) {
                                                 "paid" -> Success
@@ -2173,7 +2173,7 @@ fun WarehouseInvoiceDetailsScreen(
                                     }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Date", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                    Text("Tanggal", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                     Text(invoice.invoiceDate?.take(10) ?: "-", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                 }
                             }
@@ -2181,20 +2181,20 @@ fun WarehouseInvoiceDetailsScreen(
                             HorizontalDivider(color = Background, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
                             
                             Column {
-                                Text("Destination Outlet", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                Text("Outlet Tujuan", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(outletName ?: "Unknown Outlet", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                Text(outletName ?: "Outlet Tidak Diketahui", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                             }
                         }
                     }
                 }
 
                 item {
-                    Text("Items Ordered", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text("Item Pesanan", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 }
 
                 items(invoice.items) { item ->
-                    val productName = products.find { it.id == item.productId }?.name ?: "Unknown Product"
+                    val productName = products.find { it.id == item.productId }?.name ?: "Produk Tidak Diketahui"
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -2205,7 +2205,7 @@ fun WarehouseInvoiceDetailsScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(productName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text("${item.quantity} units @ ${item.unitPrice.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                Text("${item.quantity} unit @ ${item.unitPrice.formatRp()}", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                             }
                             Text(item.totalPrice.formatRp(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
                         }
@@ -2220,7 +2220,7 @@ fun WarehouseInvoiceDetailsScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.1f))
                     ) {
                         Row(modifier = Modifier.padding(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Total Amount", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                            Text("Total Tagihan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                             Text(invoice.totalAmount.formatRp(), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
                         }
                     }
@@ -2246,7 +2246,7 @@ fun WarehouseMetricCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.Start) {
-            Icon(icon, title, tint = Primary, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = Primary, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 value,
