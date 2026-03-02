@@ -71,7 +71,7 @@ fun LoginScreen(
             isLoading = false
             when (result) {
                 is Resource.Success -> onLoginSuccess(result.data.user.role)
-                is Resource.Error -> { errorMessage = "Invalid credentials. Please try again." }
+                is Resource.Error -> { errorMessage = "Kredensial tidak valid. Silakan coba lagi." }
                 else -> {}
             }
         }
@@ -302,7 +302,7 @@ private fun BrandedPanel(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Business Management System",
+                text = "Sistem Manajemen Bisnis",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
@@ -312,11 +312,11 @@ private fun BrandedPanel(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Feature highlights for tablet
-                FeatureRow(icon = Icons.Outlined.Inventory, text = "Warehouse & Inventory")
+                FeatureRow(icon = Icons.Outlined.Inventory, text = "Gudang & Inventaris")
                 Spacer(modifier = Modifier.height(12.dp))
-                FeatureRow(icon = Icons.Outlined.PointOfSale, text = "Cashier & Transactions")
+                FeatureRow(icon = Icons.Outlined.PointOfSale, text = "Kasir & Transaksi")
                 Spacer(modifier = Modifier.height(12.dp))
-                FeatureRow(icon = Icons.Outlined.BarChart, text = "Reports & Analytics")
+                FeatureRow(icon = Icons.Outlined.BarChart, text = "Laporan & Analisis")
             }
         }
     }
@@ -393,13 +393,13 @@ private fun LoginFormCard(
         ) {
             // Header
             Text(
-                text = "Welcome back",
+                text = "Selamat datang kembali",
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Sign in to continue managing your business",
+                text = "Masuk untuk terus mengelola bisnis Anda",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -408,7 +408,7 @@ private fun LoginFormCard(
 
             // ── Username field ──
             Text(
-                text = "Username",
+                text = "Nama Pengguna",
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -417,7 +417,7 @@ private fun LoginFormCard(
                 value = username,
                 onValueChange = onUsernameChange,
                 placeholder = {
-                    Text("Enter your username", color = TextTertiary)
+                    Text("Masukkan nama pengguna Anda", color = TextTertiary)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -451,7 +451,7 @@ private fun LoginFormCard(
 
             // ── Password field ──
             Text(
-                text = "Password",
+                text = "Kata Sandi",
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -460,7 +460,7 @@ private fun LoginFormCard(
                 value = password,
                 onValueChange = onPasswordChange,
                 placeholder = {
-                    Text("Enter your password", color = TextTertiary)
+                    Text("Masukkan kata sandi Anda", color = TextTertiary)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -524,14 +524,14 @@ private fun LoginFormCard(
                         )
                     )
                     Text(
-                        "Remember me",
+                        "Ingat saya",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
                 }
                 TextButton(onClick = { }) {
                     Text(
-                        "Forgot Password?",
+                        "Lupa Kata Sandi?",
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
@@ -619,10 +619,10 @@ private fun LoginFormCard(
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "Sign In",
+                                "Masuk Sekarang",
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    letterSpacing = 0.5.sp
+                                     fontWeight = FontWeight.SemiBold,
+                                     letterSpacing = 0.5.sp
                                 ),
                                 color = Color.White
                             )
@@ -650,7 +650,7 @@ private fun LoginFormCard(
                     color = DividerColor
                 )
                 Text(
-                    "Secure Login",
+                    "Login Aman",
                     modifier = Modifier.padding(horizontal = 16.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = TextTertiary

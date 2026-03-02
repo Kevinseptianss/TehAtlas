@@ -64,7 +64,9 @@ data class OutletStatsDto(
     @SerializedName("selling_margin") val sellingMargin: Double,
     @SerializedName("daily_revenue") val dailyRevenue: List<DailyRevenueDto>? = null,
     @SerializedName("total_sales") val totalSales: Int = 0,
-    @SerializedName("outlet_items") val outletItems: List<ProductDto>? = null
+    @SerializedName("outlet_items") val outletItems: List<ProductDto>? = null,
+    @SerializedName("sales_list") val salesList: List<SaleDto>? = null,
+    @SerializedName("expenses_list") val expensesList: List<ExpenseDto>? = null
 )
 
 data class DailyRevenueDto(
@@ -204,9 +206,11 @@ data class SaleDto(
 
 data class SaleItemDto(
     @SerializedName("product_id") val productId: String,
+    @SerializedName("product_name") val productName: String? = null,
     @SerializedName("quantity") val quantity: Int,
     @SerializedName("unit_price") val unitPrice: Double,
-    @SerializedName("total_price") val totalPrice: Double
+    @SerializedName("total_price") val totalPrice: Double,
+    @SerializedName("cost_price") val costPrice: Double? = null
 )
 
 data class CreateSaleRequest(
@@ -260,7 +264,8 @@ data class AdminDashboardDto(
     @SerializedName("daily_revenue") val dailyRevenue: List<DailyRevenueDto>? = null,
     @SerializedName("recent_sales") val recentSales: List<SaleDto>? = null,
     @SerializedName("recent_purchases") val recentPurchases: List<PurchaseDto>? = null,
-    @SerializedName("outlets") val outlets: List<OutletDto>? = null
+    @SerializedName("outlets") val outlets: List<OutletDto>? = null,
+    @SerializedName("expenses_list") val expensesList: List<ExpenseDto>? = null
 )
 
 data class WarehouseDashboardDto(
@@ -295,4 +300,23 @@ data class StockHistoryDto(
     @SerializedName("cost_price") val costPrice: Double? = 0.0,
     @SerializedName("reference_id") val referenceId: String? = null,
     @SerializedName("created_at") val createdAt: String? = null
+)
+
+// ─── Expense ──────────────────────────────────────────────────────────
+data class ExpenseDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("outlet_id") val outletId: String? = null,
+    @SerializedName("description") val description: String,
+    @SerializedName("amount") val amount: Double,
+    @SerializedName("category") val category: String,
+    @SerializedName("expense_date") val expenseDate: String? = null,
+    @SerializedName("created_by") val createdBy: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+data class CreateExpenseRequest(
+    @SerializedName("description") val description: String,
+    @SerializedName("amount") val amount: Double,
+    @SerializedName("category") val category: String,
+    @SerializedName("expense_date") val expenseDate: String? = null
 )

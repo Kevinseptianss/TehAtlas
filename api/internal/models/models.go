@@ -122,10 +122,12 @@ type Sale struct {
 }
 
 type SaleItem struct {
-	ProductID  primitive.ObjectID `json:"product_id" bson:"product_id"`
-	Quantity   int                `json:"quantity" bson:"quantity"`
-	UnitPrice  float64            `json:"unit_price" bson:"unit_price"`
-	TotalPrice float64            `json:"total_price" bson:"total_price"`
+	ProductID   primitive.ObjectID `json:"product_id" bson:"product_id"`
+	ProductName string             `json:"product_name,omitempty" bson:"product_name,omitempty"`
+	Quantity    int                `json:"quantity" bson:"quantity"`
+	UnitPrice   float64            `json:"unit_price" bson:"unit_price"`
+	TotalPrice  float64            `json:"total_price" bson:"total_price"`
+	CostPrice   float64            `json:"cost_price,omitempty" bson:"cost_price,omitempty"`
 }
 
 // InventoryTransaction tracks all inventory movements
@@ -180,4 +182,16 @@ type StockHistory struct {
 	CostPrice   float64             `json:"cost_price" bson:"cost_price"`
 	ReferenceID primitive.ObjectID  `json:"reference_id,omitempty" bson:"reference_id,omitempty"`
 	CreatedAt   time.Time           `json:"created_at" bson:"created_at"`
+}
+
+// Expense represents a store expense recorded by a cashier
+type Expense struct {
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	OutletID    primitive.ObjectID `json:"outlet_id" bson:"outlet_id"`
+	Description string             `json:"description" bson:"description"`
+	Amount      float64            `json:"amount" bson:"amount"`
+	Category    string             `json:"category" bson:"category"`
+	ExpenseDate time.Time          `json:"expense_date" bson:"expense_date"`
+	CreatedBy   primitive.ObjectID `json:"created_by" bson:"created_by"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 }

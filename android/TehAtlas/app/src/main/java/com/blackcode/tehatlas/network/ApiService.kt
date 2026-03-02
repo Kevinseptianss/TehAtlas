@@ -158,4 +158,11 @@ interface ApiService {
 
     @GET("admin/stock-history/{id}")
     suspend fun getAdminStockHistory(@Path("id") itemId: String): Response<ApiResponse<List<StockHistoryDto>>>
+
+    // ─── Outlet Expenses ───────────────────────────────────────────────
+    @POST("outlet/expenses")
+    suspend fun createExpense(@Body request: CreateExpenseRequest): Response<ApiResponse<ExpenseDto>>
+
+    @GET("outlet/expenses")
+    suspend fun getExpenses(): Response<ApiResponse<List<ExpenseDto>>>
 }

@@ -27,21 +27,24 @@ class TehAtlasRepository(private val sessionManager: SessionManager) {
                 val response = call()
                 if (response.isSuccessful) {
                     val body = response.body()
-                    if (body != null && body.success && body.data != null) {
-                        Resource.Success(body.data)
+                    if (body != null && body.success) {
+                        // If data is null but success is true, return empty list or null depending on T
+                        // For simplicity in this repo, we'll cast null to T and let the caller handle it or use a default
+                        @Suppress("UNCHECKED_CAST")
+                        Resource.Success(body.data as T)
                     } else {
-                        Resource.Error(body?.message ?: "Unknown error", response.code())
+                        Resource.Error(body?.message ?: "Kesalahan tidak diketahui", response.code())
                     }
                 } else {
                     val errorMsg = try {
-                        response.errorBody()?.string() ?: "Error ${response.code()}"
+                        "Kesalahan ${response.code()}"
                     } catch (e: Exception) {
-                        "Error ${response.code()}"
+                        "Kesalahan ${response.code()}"
                     }
                     Resource.Error(errorMsg, response.code())
                 }
             } catch (e: Exception) {
-                Resource.Error(e.localizedMessage ?: "Network error. Check your connection.")
+                Resource.Error(e.localizedMessage ?: "Kesalahan jaringan. Periksa koneksi Anda.")
             }
         }
     }
@@ -125,4 +128,8 @@ class TehAtlasRepository(private val sessionManager: SessionManager) {
     suspend fun getWarehouseStockHistory(id: String): Resource<List<StockHistoryDto>> = safeApiCall { api.getWarehouseStockHistory(id) }
     suspend fun getOutletStockHistory(itemId: String): Resource<List<StockHistoryDto>> = safeApiCall { api.getOutletStockHistory(itemId) }
     suspend fun getAdminStockHistory(itemId: String): Resource<List<StockHistoryDto>> = safeApiCall { api.getAdminStockHistory(itemId) }
+
+    // ─── Outlet Expenses ───────────────────────────────────────────────
+    suspend fun createExpense(request: CreateExpenseRequest): Resource<ExpenseDto> = safeApiCall { api.createExpense(request) }
+    suspend fun getExpenses(): Resource<List<ExpenseDto>> = safeApiCall { api.getExpenses() }
 }

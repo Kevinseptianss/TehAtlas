@@ -125,6 +125,8 @@ func main() {
 			outlet.GET("/reports/sales", handlers.GetOutletSalesReport)
 			outlet.GET("/reports/profits", handlers.GetOutletProfitReport)
 			outlet.GET("/stock-history/:id", handlers.GetStockHistory)
+			outlet.POST("/expenses", handlers.CreateExpense)
+			outlet.GET("/expenses", handlers.GetExpenses)
 		}
 
 		// Common routes

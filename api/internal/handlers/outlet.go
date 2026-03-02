@@ -619,6 +619,10 @@ func CreateSale(c *gin.Context) {
 	if exists {
 		if userObjID, ok := userID.(primitive.ObjectID); ok {
 			sale.CreatedBy = userObjID
+		} else if userIDStr, ok := userID.(string); ok {
+			if id, err := primitive.ObjectIDFromHex(userIDStr); err == nil {
+				sale.CreatedBy = id
+			}
 		}
 	}
 
@@ -632,11 +636,25 @@ func CreateSale(c *gin.Context) {
 	outletIDStr := outletObjID.Hex()
 	stockUpdateKey := "outlet_stock." + outletIDStr
 
-	for _, item := range sale.Items {
+	for i, item := range sale.Items {
+		// Snapshot product details
+		var product models.Product
+		err := productsCollection.FindOne(c, bson.M{"_id": item.ProductID}).Decode(&product)
+		if err == nil {
+			sale.Items[i].ProductName = product.Name
+			sale.Items[i].CostPrice = product.CostPrice
+		} else {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Message: "Item not found in inventory: " + item.ProductID.Hex(),
+			})
+			return
+		}
+
 		// Decrement stock and get updated balance
 		var updatedItem models.Product
 		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-		err := productsCollection.FindOneAndUpdate(
+		err = productsCollection.FindOneAndUpdate(
 			c,
 			bson.M{"_id": item.ProductID},
 			bson.M{"$inc": bson.M{stockUpdateKey: -item.Quantity}},
@@ -657,16 +675,6 @@ func CreateSale(c *gin.Context) {
 				CreatedAt:   time.Now(),
 			}
 			historyCollection.InsertOne(c, history)
-		} else {
-			// Find without update to check if item was simply not found
-			err := productsCollection.FindOne(c, bson.M{"_id": item.ProductID}).Decode(&updatedItem)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, models.APIResponse{
-					Success: false,
-					Message: "Item not found in inventory",
-				})
-				return
-			}
 		}
 	}
 
@@ -837,5 +845,127 @@ func GetStockHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    history,
+	})
+}
+
+// CreateExpense records a new store expense
+func CreateExpense(c *gin.Context) {
+	var expense models.Expense
+	if err := c.ShouldBindJSON(&expense); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Message: "Invalid request format: " + err.Error(),
+		})
+		return
+	}
+
+	outletID, exists := c.Get("outlet_id")
+	if !exists || outletID == nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Message: "Outlet ID required",
+		})
+		return
+	}
+
+	var outletObjID primitive.ObjectID
+	switch v := outletID.(type) {
+	case primitive.ObjectID:
+		outletObjID = v
+	case string:
+		var err error
+		outletObjID, err = primitive.ObjectIDFromHex(v)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Message: "Invalid outlet ID format",
+			})
+			return
+		}
+	}
+
+	expense.ID = primitive.NewObjectID()
+	expense.OutletID = outletObjID
+	expense.CreatedAt = time.Now()
+	if expense.ExpenseDate.IsZero() {
+		expense.ExpenseDate = time.Now()
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if exists {
+		if userObjID, ok := userID.(primitive.ObjectID); ok {
+			expense.CreatedBy = userObjID
+		}
+	}
+
+	collection := database.GetCollection("expenses")
+	_, err := collection.InsertOne(c, expense)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Message: "Error recording expense",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, models.APIResponse{
+		Success: true,
+		Message: "Expense recorded successfully",
+		Data:    expense,
+	})
+}
+
+// GetExpenses returns list of expenses for an outlet
+func GetExpenses(c *gin.Context) {
+	outletID, exists := c.Get("outlet_id")
+	if !exists || outletID == nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Message: "Outlet ID required",
+		})
+		return
+	}
+
+	var outletObjID primitive.ObjectID
+	switch v := outletID.(type) {
+	case primitive.ObjectID:
+		outletObjID = v
+	case string:
+		var err error
+		outletObjID, err = primitive.ObjectIDFromHex(v)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Message: "Invalid outlet ID format",
+			})
+			return
+		}
+	}
+
+	collection := database.GetCollection("expenses")
+	opts := options.Find().SetSort(bson.M{"expense_date": -1})
+	cursor, err := collection.Find(c, bson.M{"outlet_id": outletObjID}, opts)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Message: "Error fetching expenses",
+		})
+		return
+	}
+	defer cursor.Close(c)
+
+	expenses := []models.Expense{}
+	if err = cursor.All(c, &expenses); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Message: "Error decoding expenses",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    expenses,
 	})
 }
