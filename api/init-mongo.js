@@ -32,10 +32,10 @@ db.users.insertOne({
   "updated_at": new Date()
 });
 
-// Insert default warehouse user (password: warehouse123)
+// Insert default gudang user (password: gudang123)
 db.users.insertOne({
-  "username": "warehouse",
-  "password": "warehouse123",
+  "username": "gudang",
+  "password": "gudang123",
   "role": "warehouse",
   "created_at": new Date(),
   "updated_at": new Date()
