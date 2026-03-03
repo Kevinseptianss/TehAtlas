@@ -14,6 +14,7 @@ import com.blackcode.tehatlas.network.RetrofitClient
 import com.blackcode.tehatlas.network.SessionManager
 import com.blackcode.tehatlas.ui.theme.Background
 import com.blackcode.tehatlas.ui.theme.TehAtlasTheme
+import com.blackcode.tehatlas.utils.AppUpdater
 
 sealed class Screen {
     object Login : Screen()
@@ -83,6 +84,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+                
+                AppUpdater.Component()
             }
         }
     }

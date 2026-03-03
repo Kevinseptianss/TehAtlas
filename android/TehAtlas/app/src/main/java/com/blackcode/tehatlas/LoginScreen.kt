@@ -42,6 +42,8 @@ import com.blackcode.tehatlas.network.*
 import com.blackcode.tehatlas.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.blackcode.tehatlas.utils.AppUpdater
+import com.blackcode.tehatlas.ui.UpdateDialog
 
 // ─── Main Login Screen ────────────────────────────────────────────────────────
 
@@ -61,6 +63,7 @@ fun LoginScreen(
     var showContent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
+
     val coroutineScope = rememberCoroutineScope()
 
     val performLogin: () -> Unit = {
@@ -182,15 +185,29 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Footer
-                    Text(
-                        "TehAtlas v1.0.0",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextTertiary,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 24.dp),
-                        textAlign = TextAlign.Center
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "TehAtlas v1.0.0",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextTertiary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { AppUpdater.showAlert() },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Filled.SystemUpdate, null, modifier = Modifier.size(14.dp), tint = Primary)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Perbarui Aplikasi", style = MaterialTheme.typography.labelMedium, color = Primary)
+                        }
+                    }
                 }
             }
         }

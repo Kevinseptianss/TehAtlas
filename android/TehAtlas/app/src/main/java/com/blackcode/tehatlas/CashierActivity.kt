@@ -41,6 +41,8 @@ import androidx.compose.ui.window.Dialog
 import com.blackcode.tehatlas.network.*
 import com.blackcode.tehatlas.ui.theme.*
 import com.blackcode.tehatlas.utils.formatRp
+import com.blackcode.tehatlas.utils.AppUpdater
+import com.blackcode.tehatlas.ui.UpdateDialog
 import kotlinx.coroutines.launch
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -436,8 +438,15 @@ fun CashierPOSScreen(padding: PaddingValues) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(50),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedContainerColor = Background, unfocusedContainerColor = Background
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedContainerColor = Background,
+                                unfocusedContainerColor = Background,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             ),
                             singleLine = true
                         )
@@ -736,8 +745,14 @@ fun CashierPOSScreen(padding: PaddingValues) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             ),
                             singleLine = true
                         )
@@ -900,9 +915,16 @@ fun CashierProductsScreen(
                     }
 
                     val fieldColors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                        cursorColor = Primary, focusedLabelColor = Primary,
-                        focusedContainerColor = Background, unfocusedContainerColor = Background
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = DividerColor,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        focusedContainerColor = Background,
+                        unfocusedContainerColor = Background,
+                        focusedPlaceholderColor = TextTertiary,
+                        unfocusedPlaceholderColor = TextTertiary
                     )
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(value = name, onValueChange = { name = it },
@@ -1067,7 +1089,7 @@ fun CashierProductDetailsScreen(
     var description by remember { mutableStateOf(product.description ?: "") }
     var sku by remember { mutableStateOf(product.sku ?: "") }
     var category by remember { mutableStateOf(product.category ?: "") }
-    var sellingPrice by remember { mutableStateOf(product.unitPrice.toInt().toString()) }
+    var sellingPrice by remember { mutableStateOf(if (product.unitPrice > 0) product.unitPrice.toLong().toString() else "") }
     var stock by remember { mutableStateOf(product.getStock(context).toString()) }
     
     var isSaving by remember { mutableStateOf(false) }
@@ -1118,10 +1140,14 @@ fun CashierProductDetailsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val fieldColors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
                 focusedBorderColor = Primary,
                 unfocusedBorderColor = DividerColor,
                 focusedContainerColor = Surface,
-                unfocusedContainerColor = Surface
+                unfocusedContainerColor = Surface,
+                focusedPlaceholderColor = TextTertiary,
+                unfocusedPlaceholderColor = TextTertiary
             )
 
             OutlinedTextField(
@@ -1154,17 +1180,21 @@ fun CashierProductDetailsScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = product.costPrice.toInt().toString(),
+                    value = if (product.costPrice > 0) product.costPrice.toLong().toString() else "",
                     onValueChange = { },
                     readOnly = true,
                     label = { Text("Harga Beli (Info)") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
                         focusedBorderColor = DividerColor,
                         unfocusedBorderColor = DividerColor,
                         focusedContainerColor = Background,
-                        unfocusedContainerColor = Background
+                        unfocusedContainerColor = Background,
+                        focusedPlaceholderColor = TextTertiary,
+                        unfocusedPlaceholderColor = TextTertiary
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -1331,9 +1361,16 @@ fun CashierInventoryScreen(
                     }
 
                     val fieldColors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                        cursorColor = Primary, focusedLabelColor = Primary,
-                        focusedContainerColor = Background, unfocusedContainerColor = Background
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = DividerColor,
+                        cursorColor = Primary,
+                        focusedLabelColor = Primary,
+                        focusedContainerColor = Background,
+                        unfocusedContainerColor = Background,
+                        focusedPlaceholderColor = TextTertiary,
+                        unfocusedPlaceholderColor = TextTertiary
                     )
                     Column(modifier = Modifier.padding(20.dp).heightIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(value = orderNotes, onValueChange = { orderNotes = it }, label = { Text("Judul / Catatan Pesanan") },
@@ -1378,7 +1415,11 @@ fun CashierInventoryScreen(
                             )
                             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                                 products.forEachIndexed { idx, item ->
-                                    DropdownMenuItem(text = { Text(item.name) }, onClick = { selectedItemIdx = idx; expanded = false })
+                                    DropdownMenuItem(text = { Text(item.name) }, onClick = { 
+                                        selectedItemIdx = idx
+                                        cost = if (item.costPrice > 0) item.costPrice.toLong().toString() else ""
+                                        expanded = false 
+                                    })
                                 }
                             }
                         }
@@ -1828,10 +1869,41 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(sessionManager.getUsername() ?: "Cashier", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                            Text("Kasir", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                            Text("Peran: Kasir", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Update App Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { AppUpdater.showAlert() }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Filled.SystemUpdate, null, tint = Primary, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Perbarui Aplikasi", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                            Text("Cek dan instal versi terbaru", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Filled.ChevronRight, null, tint = TextTertiary, modifier = Modifier.size(20.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Button(
                         onClick = { sessionManager.clearSession(); RetrofitClient.refresh(); onLogout() },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -2063,7 +2135,17 @@ fun CashierExpensesScreen(padding: PaddingValues) {
                         label = { Text("Keterangan") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
+                        )
                     )
                     OutlinedTextField(
                         value = amount,
@@ -2072,7 +2154,17 @@ fun CashierExpensesScreen(padding: PaddingValues) {
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
+                        )
                     )
                     
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -2247,7 +2339,7 @@ class CashierActivityClass : ComponentActivity() {
         val sessionManager = SessionManager.getInstance(this)
         RetrofitClient.init(sessionManager)
         setContent {
-            TehAtlasTheme {
+            TehAtlasTheme(darkTheme = false) {
                 CashierDashboard(onLogout = {
                     sessionManager.clearSession()
                     RetrofitClient.refresh()
@@ -2258,6 +2350,7 @@ class CashierActivityClass : ComponentActivity() {
                     startActivity(intent)
                     finish()
                 })
+                AppUpdater.Component()
             }
         }
     }
