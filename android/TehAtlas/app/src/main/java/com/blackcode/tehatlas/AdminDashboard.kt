@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.blackcode.tehatlas.network.*
 import com.blackcode.tehatlas.ui.theme.*
 import com.blackcode.tehatlas.utils.formatRp
+import com.blackcode.tehatlas.utils.AppUpdater
+import com.blackcode.tehatlas.ui.UpdateDialog
 import kotlinx.coroutines.launch
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -1303,6 +1305,35 @@ fun SettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                                 color = TextTertiary
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    // Update App Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { AppUpdater.showAlert() }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Filled.SystemUpdate, null, tint = Primary, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Perbarui Aplikasi", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                            Text("Cek dan instal versi terbaru", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Filled.ChevronRight, null, tint = TextTertiary, modifier = Modifier.size(20.dp))
                     }
                 }
             }

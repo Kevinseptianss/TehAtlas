@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import com.blackcode.tehatlas.network.*
 import com.blackcode.tehatlas.ui.theme.*
 import com.blackcode.tehatlas.utils.formatRp
+import com.blackcode.tehatlas.utils.AppUpdater
+import com.blackcode.tehatlas.ui.UpdateDialog
 import kotlinx.coroutines.launch
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -748,7 +750,7 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Background),
+        modifier = Modifier.fillMaxSize().background(Background).statusBarsPadding(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -785,8 +787,14 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                            cursorColor = Primary, focusedLabelColor = Primary
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
                         )
                     )
 
@@ -796,8 +804,14 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                            cursorColor = Primary, focusedLabelColor = Primary
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
                         )
                     )
 
@@ -814,8 +828,14 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                             modifier = Modifier.fillMaxWidth().menuAnchor(),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             )
                         )
                         if (existingCategories.isNotEmpty()) {
@@ -841,8 +861,14 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                            cursorColor = Primary, focusedLabelColor = Primary
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
                         )
                     )
                 }
@@ -1118,7 +1144,7 @@ fun WarehousePurchaseDetailScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Background),
+        modifier = Modifier.fillMaxSize().background(Background).statusBarsPadding(),
         contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1266,7 +1292,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Background),
+        modifier = Modifier.fillMaxSize().background(Background).statusBarsPadding(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1298,8 +1324,14 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                            cursorColor = Primary, focusedLabelColor = Primary
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
                         )
                     )
                 }
@@ -1422,8 +1454,14 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                                 readOnly = true,
                                 shape = RoundedCornerShape(14.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                    cursorColor = Primary, focusedLabelColor = Primary
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    focusedBorderColor = Primary,
+                                    unfocusedBorderColor = DividerColor,
+                                    cursorColor = Primary,
+                                    focusedLabelColor = Primary,
+                                    focusedPlaceholderColor = TextTertiary,
+                                    unfocusedPlaceholderColor = TextTertiary
                                 )
                             )
                             ExposedDropdownMenu(expanded = itemExpanded, onDismissRequest = { itemExpanded = false }) {
@@ -1433,7 +1471,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                                             text = { Text("${item.name} (${item.category ?: ""})") },
                                             onClick = { 
                                                 selectedItem = item
-                                                unitCost = item.costPrice.toString()
+                                                unitCost = if (item.costPrice > 0) item.costPrice.toLong().toString() else ""
                                                 itemExpanded = false 
                                             }
                                         )
@@ -1447,8 +1485,14 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             )
                         )
                         OutlinedTextField(
@@ -1457,8 +1501,14 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             )
                         )
                     }
@@ -1741,7 +1791,7 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Background),
+        modifier = Modifier.fillMaxSize().background(Background).statusBarsPadding(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1771,8 +1821,14 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                            cursorColor = Primary, focusedLabelColor = Primary
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = Primary,
+                            unfocusedBorderColor = DividerColor,
+                            cursorColor = Primary,
+                            focusedLabelColor = Primary,
+                            focusedPlaceholderColor = TextTertiary,
+                            unfocusedPlaceholderColor = TextTertiary
                         )
                     )
 
@@ -1786,8 +1842,14 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                             readOnly = true,
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             )
                         )
                         ExposedDropdownMenu(expanded = outletExpanded, onDismissRequest = { outletExpanded = false }) {
@@ -1921,15 +1983,21 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                                 readOnly = true, shape = RoundedCornerShape(14.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                    cursorColor = Primary, focusedLabelColor = Primary
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    focusedBorderColor = Primary,
+                                    unfocusedBorderColor = DividerColor,
+                                    cursorColor = Primary,
+                                    focusedLabelColor = Primary,
+                                    focusedPlaceholderColor = TextTertiary,
+                                    unfocusedPlaceholderColor = TextTertiary
                                 )
                             )
                             ExposedDropdownMenu(expanded = itemExpanded, onDismissRequest = { itemExpanded = false }) {
                                 products.forEach { item ->
                                     DropdownMenuItem(
                                         text = { Text("${item.name} (${item.category ?: ""})") },
-                                        onClick = { selectedItem = item; unitPrice = item.costPrice.toString(); itemExpanded = false }
+                                        onClick = { selectedItem = item; unitPrice = if (item.costPrice > 0) item.costPrice.toLong().toString() else ""; itemExpanded = false }
                                     )
                                 }
                             }
@@ -1950,8 +2018,14 @@ fun WarehouseAddInvoiceScreen(onBack: () -> Unit, onInvoiceCreated: () -> Unit) 
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary, unfocusedBorderColor = DividerColor,
-                                cursorColor = Primary, focusedLabelColor = Primary
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary,
+                                focusedPlaceholderColor = TextTertiary,
+                                unfocusedPlaceholderColor = TextTertiary
                             )
                         )
                     }
@@ -2038,7 +2112,38 @@ fun WarehouseSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Update App Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { AppUpdater.showAlert() }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Filled.SystemUpdate, null, tint = Primary, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Perbarui Aplikasi", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                            Text("Cek dan instal versi terbaru", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Filled.ChevronRight, null, tint = TextTertiary, modifier = Modifier.size(20.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Button(
                         onClick = {
                             sessionManager.clearSession()
@@ -2265,7 +2370,7 @@ class WarehouseActivityClass : ComponentActivity() {
         val sessionManager = SessionManager.getInstance(this)
         RetrofitClient.init(sessionManager)
         setContent {
-            TehAtlasTheme {
+            TehAtlasTheme(darkTheme = false) {
                 WarehouseDashboard(
                     onLogout = {
                         sessionManager.clearSession()
@@ -2278,6 +2383,8 @@ class WarehouseActivityClass : ComponentActivity() {
                     },
                     modifier = Modifier.fillMaxSize()
                 )
+                
+                AppUpdater.Component()
             }
         }
     }
