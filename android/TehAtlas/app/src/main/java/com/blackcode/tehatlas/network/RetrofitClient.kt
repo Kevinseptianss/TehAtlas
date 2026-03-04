@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
 
-    // Default to emulator localhost. Change for real device.
-    var BASE_URL = "http://10.0.2.2:8080/api/"
+    // Default to production API
+    var BASE_URL = "https://api.tehatlas.my.id/api/"
 
     private var sessionManager: SessionManager? = null
     private var apiService: ApiService? = null

@@ -32,7 +32,7 @@ object AppUpdater {
         }
     }
 
-    private const val APK_URL = "http://api.tehatlas.my.id/app-debug.apk"
+    private const val APK_URL = "https://api.tehatlas.my.id/app-debug.apk"
     private const val FILE_NAME = "tehatlas-update.apk"
 
     fun downloadApk(context: Context): Long {
