@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.blackcode.tehatlas.network.RetrofitClient
 import com.blackcode.tehatlas.network.SessionManager
+import androidx.compose.ui.platform.LocalContext
 import com.blackcode.tehatlas.ui.theme.Background
 import com.blackcode.tehatlas.ui.theme.TehAtlasTheme
 import com.blackcode.tehatlas.utils.AppUpdater
@@ -57,6 +58,11 @@ class MainActivity : ComponentActivity() {
                     Screen.AdminDashboard else Screen.Login
 
                 var currentScreen by remember { mutableStateOf<Screen>(initialScreen) }
+                val context = LocalContext.current
+
+                LaunchedEffect(Unit) {
+                    AppUpdater.checkForUpdate(context)
+                }
 
                 when (currentScreen) {
                     Screen.Login -> LoginScreen(

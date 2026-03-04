@@ -2339,7 +2339,11 @@ class CashierActivityClass : ComponentActivity() {
         val sessionManager = SessionManager.getInstance(this)
         RetrofitClient.init(sessionManager)
         setContent {
+            val context = LocalContext.current
             TehAtlasTheme(darkTheme = false) {
+                LaunchedEffect(Unit) {
+                    AppUpdater.checkForUpdate(context)
+                }
                 CashierDashboard(onLogout = {
                     sessionManager.clearSession()
                     RetrofitClient.refresh()

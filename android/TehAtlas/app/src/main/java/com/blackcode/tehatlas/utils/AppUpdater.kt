@@ -7,15 +7,30 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.compose.runtime.*
+import com.blackcode.tehatlas.network.AppVersionDto
+import com.blackcode.tehatlas.network.RetrofitClient
 import com.blackcode.tehatlas.ui.UpdateDialog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 object AppUpdater {
     var showUpdateDialog by mutableStateOf(false)
         private set
+
+    // Remote version info from API
+    var remoteVersion by mutableStateOf<AppVersionDto?>(null)
+        private set
+
+    var currentVersionName by mutableStateOf("")
+        private set
+
+    private const val FILE_NAME = "tehatlas-update.apk"
+    private const val TAG = "AppUpdater"
 
     fun showAlert() {
         showUpdateDialog = true
@@ -27,17 +42,58 @@ object AppUpdater {
 
     @Composable
     fun Component() {
-        if (showUpdateDialog) {
-            UpdateDialog(onDismiss = { dismissAlert() })
+        if (showUpdateDialog && remoteVersion != null) {
+            UpdateDialog(
+                currentVersion = currentVersionName,
+                remoteVersion = remoteVersion!!,
+                onDismiss = { dismissAlert() }
+            )
         }
     }
 
-    private const val APK_URL = "https://api.tehatlas.my.id/app-debug.apk"
-    private const val FILE_NAME = "tehatlas-update.apk"
+    /**
+     * Checks for updates by calling the API and comparing versionCode.
+     * Automatically shows the update dialog if a newer version is available.
+     */
+    suspend fun checkForUpdate(context: Context) {
+        try {
+            // Get current app version
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val currentVersionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode
+            }
+            currentVersionName = packageInfo.versionName ?: "1.0.0"
 
-    fun downloadApk(context: Context): Long {
+            Log.d(TAG, "Current version: $currentVersionName (code $currentVersionCode)")
+
+            // Call API
+            val response = withContext(Dispatchers.IO) {
+                RetrofitClient.getApiService().checkAppVersion()
+            }
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                val versionData = response.body()?.data
+                if (versionData != null && versionData.versionCode > currentVersionCode) {
+                    Log.d(TAG, "Update available: ${versionData.versionName} (code ${versionData.versionCode})")
+                    remoteVersion = versionData
+                    showUpdateDialog = true
+                } else {
+                    Log.d(TAG, "App is up to date")
+                }
+            } else {
+                Log.w(TAG, "Version check failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking for updates", e)
+        }
+    }
+
+    fun downloadApk(context: Context, downloadUrl: String): Long {
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val uri = Uri.parse(APK_URL)
+        val uri = Uri.parse(downloadUrl)
 
         // Clear existing file if any
         val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -60,25 +116,27 @@ object AppUpdater {
             override fun onReceive(ctx: Context?, intent: Intent?) {
                 val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
                 if (id == downloadId) {
-                    // We don't auto-install here if we want the dialog to handle it, 
-                    // but the user said "after download it prompt open the apk file we download"
-                    // So we can keep the auto-install or trigger it from UI.
-                    // For now, let's keep it as is or refine based on UI state.
-                    installApk(context)
                     try {
                         context.unregisterReceiver(this)
-                    } catch (e: Exception) {
-                    }
+                    } catch (_: Exception) {}
                 }
             }
         }
-        
-        context.registerReceiver(
-            onComplete, 
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_EXPORTED
-        )
-        
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(
+                onComplete,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                Context.RECEIVER_EXPORTED
+            )
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            context.registerReceiver(
+                onComplete,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+            )
+        }
+
         return downloadId
     }
 
@@ -86,11 +144,11 @@ object AppUpdater {
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val query = DownloadManager.Query().setFilterById(downloadId)
         val cursor = downloadManager.query(query)
-        
+
         if (cursor != null && cursor.moveToFirst()) {
             val bytesDownloaded = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
             val bytesTotal = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-            
+
             cursor.close()
             if (bytesTotal > 0) {
                 return bytesDownloaded.toFloat() / bytesTotal.toFloat()
@@ -103,7 +161,7 @@ object AppUpdater {
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val query = DownloadManager.Query().setFilterById(downloadId)
         val cursor = downloadManager.query(query)
-        
+
         var finished = false
         if (cursor != null && cursor.moveToFirst()) {
             val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))

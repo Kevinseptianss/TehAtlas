@@ -165,4 +165,8 @@ interface ApiService {
 
     @GET("outlet/expenses")
     suspend fun getExpenses(): Response<ApiResponse<List<ExpenseDto>>>
+
+    // ─── App Version ──────────────────────────────────────────────────────
+    @GET("app/version")
+    suspend fun checkAppVersion(): Response<ApiResponse<AppVersionDto>>
 }
