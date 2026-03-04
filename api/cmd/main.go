@@ -46,6 +46,7 @@ func main() {
 	r.POST("/api/auth/login", handlers.Login)
 	r.POST("/api/auth/logout", handlers.Logout)
 	r.GET("/api/health", handlers.HealthCheck)
+	r.GET("/api/app/version", handlers.GetLatestVersion)
 
 	// Protected routes
 	auth := r.Group("/api")
@@ -83,6 +84,9 @@ func main() {
 			admin.GET("/analytics/outlets/comparison", handlers.GetAdminDashboard)
 			admin.GET("/analytics/outlets/top-performers", handlers.GetAdminDashboard)
 			admin.GET("/analytics/trends", handlers.GetAdminDashboard)
+
+			// App version management
+			admin.POST("/app/version", handlers.CreateAppVersion)
 		}
 
 		// Warehouse routes

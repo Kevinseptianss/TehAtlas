@@ -195,3 +195,14 @@ type Expense struct {
 	CreatedBy   primitive.ObjectID `json:"created_by" bson:"created_by"`
 	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 }
+
+// AppVersion represents a released app version for OTA updates
+type AppVersion struct {
+	ID           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	VersionCode  int                `json:"version_code" bson:"version_code"`
+	VersionName  string             `json:"version_name" bson:"version_name"`
+	DownloadURL  string             `json:"download_url" bson:"download_url"`
+	ReleaseNotes []string           `json:"release_notes" bson:"release_notes"`
+	ForceUpdate  bool               `json:"force_update" bson:"force_update"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+}

@@ -12,6 +12,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -295,10 +297,9 @@ private fun BrandedPanel(
                         .background(Color.White.copy(alpha = 0.18f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Store,
+                    Image(
+                        painter = painterResource(id = R.drawable.store_logo),
                         contentDescription = "Logo",
-                        tint = Color.White,
                         modifier = Modifier.size(if (isCompact) 28.dp else 40.dp)
                     )
                 }

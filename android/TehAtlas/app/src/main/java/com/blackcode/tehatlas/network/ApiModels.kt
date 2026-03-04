@@ -320,3 +320,14 @@ data class CreateExpenseRequest(
     @SerializedName("category") val category: String,
     @SerializedName("expense_date") val expenseDate: String? = null
 )
+
+// ─── App Version (OTA Update) ─────────────────────────────────────────
+data class AppVersionDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("version_code") val versionCode: Int,
+    @SerializedName("version_name") val versionName: String,
+    @SerializedName("download_url") val downloadUrl: String,
+    @SerializedName("release_notes") val releaseNotes: List<String>? = null,
+    @SerializedName("force_update") val forceUpdate: Boolean = false,
+    @SerializedName("created_at") val createdAt: String? = null
+)
