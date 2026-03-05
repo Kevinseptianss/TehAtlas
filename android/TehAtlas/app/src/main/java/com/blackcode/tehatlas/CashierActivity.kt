@@ -1847,6 +1847,7 @@ fun CashierHistoryScreen(padding: PaddingValues) {
 fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager.getInstance(context) }
+    val scope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(Background).padding(padding),
@@ -1880,7 +1881,11 @@ fun CashierSettingsScreen(padding: PaddingValues, onLogout: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { AppUpdater.showAlert() }
+                            .clickable { 
+                                scope.launch {
+                                    AppUpdater.checkForUpdate(context, showToastIfUpToDate = true)
+                                }
+                            }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

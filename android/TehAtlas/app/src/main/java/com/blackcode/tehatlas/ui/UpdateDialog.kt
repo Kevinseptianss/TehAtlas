@@ -58,6 +58,7 @@ fun UpdateDialog(
     var downloadId by remember { mutableLongStateOf(-1L) }
     var progress by remember { mutableFloatStateOf(0f) }
     var isFinished by remember { mutableStateOf(false) }
+    var isDownloadSuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Smooth animated progress
@@ -104,22 +105,28 @@ fun UpdateDialog(
     // Track download progress
     LaunchedEffect(isDownloading, downloadId) {
         if (isDownloading && downloadId != -1L) {
+            android.util.Log.d("AppUpdater", "Dialog tracking progress for ID: $downloadId")
             while (!isFinished) {
                 progress = AppUpdater.getDownloadProgress(context, downloadId)
                 isFinished = AppUpdater.isDownloadFinished(context, downloadId)
+                
                 if (isFinished) {
-                    progress = 1f
+                    isDownloadSuccess = AppUpdater.isDownloadSuccessful(context, downloadId)
+                    android.util.Log.d("AppUpdater", "Download finished. Success: $isDownloadSuccess")
+                    if (isDownloadSuccess) {
+                        progress = 1f
+                    }
                     break
                 }
-                delay(300)
+                delay(500)
             }
         }
     }
 
-    // Auto-install after download finishes
-    LaunchedEffect(isFinished) {
-        if (isFinished) {
-            delay(800) // Brief pause to show 100%
+    // Auto-install after download finishes successfully
+    LaunchedEffect(isFinished, isDownloadSuccess) {
+        if (isFinished && isDownloadSuccess) {
+            delay(1200) // Longer pause to show 100% and success state
             AppUpdater.installApk(context)
         }
     }
@@ -172,7 +179,8 @@ fun UpdateDialog(
                 ) {
                     Icon(
                         imageVector = when {
-                            isFinished -> Icons.Filled.CheckCircle
+                            isFinished && isDownloadSuccess -> Icons.Filled.CheckCircle
+                            isFinished && !isDownloadSuccess -> Icons.Filled.Error
                             isDownloading -> Icons.Filled.CloudDownload
                             else -> Icons.Filled.RocketLaunch
                         },
@@ -345,8 +353,10 @@ fun UpdateDialog(
                             // Update button with gradient
                             Button(
                                 onClick = {
+                                    android.util.Log.d("AppUpdater", "Update button clicked. URL: ${remoteVersion.downloadUrl}")
                                     isDownloading = true
                                     downloadId = AppUpdater.downloadApk(context, remoteVersion.downloadUrl)
+                                    android.util.Log.d("AppUpdater", "Download initiated, ID: $downloadId")
                                 },
                                 modifier = Modifier
                                     .weight(1.5f)
@@ -408,7 +418,11 @@ fun UpdateDialog(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Mohon tunggu sejenak...",
+                            text = when {
+                                progress > 0.99f -> "Menyelesaikan unduhan..."
+                                progress > 0.95f -> "Hampir selesai..."
+                                else -> "Mohon tunggu sejenak..."
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMedium
                         )
@@ -508,7 +522,7 @@ fun UpdateDialog(
                     }
                 }
 
-                // ─── Phase: Download Complete ─────────────────────────────
+                // ─── Phase: Download Finished (Success or Failure) ─────────
                 AnimatedVisibility(
                     visible = isFinished,
                     enter = fadeIn() + scaleIn(initialScale = 0.8f),
@@ -516,18 +530,21 @@ fun UpdateDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Unduhan Selesai! 🎉",
+                            text = if (isDownloadSuccess) "Unduhan Selesai! 🎉" else "Unduhan Gagal ❌",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = (-0.5).sp
                             ),
-                            color = TextDark
+                            color = if (isDownloadSuccess) TextDark else Color(0xFFE53935)
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = "File update siap dipasang.\nMembuka installer...",
+                            text = if (isDownloadSuccess)
+                                "File update siap dipasang.\nMembuka installer..."
+                            else
+                                "Gagal mengunduh update.\nSilakan coba lagi nanti.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMedium,
                             textAlign = TextAlign.Center
@@ -535,47 +552,67 @@ fun UpdateDialog(
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        // Install button with success gradient
-                        Button(
-                            onClick = {
-                                AppUpdater.installApk(context)
-                                onDismiss()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent
-                            ),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Box(
+                        if (isDownloadSuccess) {
+                            // Install button with success gradient
+                            Button(
+                                onClick = {
+                                    AppUpdater.installApk(context)
+                                    onDismiss()
+                                },
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            listOf(SuccessGreen, SuccessGreenDark)
-                                        ),
-                                        RoundedCornerShape(16.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Transparent
+                                ),
+                                contentPadding = PaddingValues(0.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Filled.InstallMobile,
-                                        null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = Color.White
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "Pasang Sekarang",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = Color.White
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(SuccessGreen, SuccessGreenDark)
+                                            ),
+                                            RoundedCornerShape(16.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Filled.InstallMobile,
+                                            null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Pasang Sekarang",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = Color.White
+                                        )
+                                    }
                                 }
+                            }
+                        } else {
+                            // Retry or Close button
+                            Button(
+                                onClick = { onDismiss() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SubtleBg
+                                )
+                            ) {
+                                Text(
+                                    "Tutup",
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
                             }
                         }
                     }
