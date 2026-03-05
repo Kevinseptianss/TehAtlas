@@ -201,7 +201,11 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         TextButton(
-                            onClick = { AppUpdater.showAlert() },
+                            onClick = { 
+                                coroutineScope.launch {
+                                    AppUpdater.checkForUpdate(context, showToastIfUpToDate = true)
+                                }
+                            },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.height(32.dp)
                         ) {

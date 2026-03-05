@@ -54,8 +54,9 @@ object AppUpdater {
     /**
      * Checks for updates by calling the API and comparing versionCode.
      * Automatically shows the update dialog if a newer version is available.
+     * @param showToastIfUpToDate If true, shows a toast if no update is needed.
      */
-    suspend fun checkForUpdate(context: Context) {
+    suspend fun checkForUpdate(context: Context, showToastIfUpToDate: Boolean = false) {
         try {
             // Get current app version
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -82,62 +83,93 @@ object AppUpdater {
                     showUpdateDialog = true
                 } else {
                     Log.d(TAG, "App is up to date")
+                    if (showToastIfUpToDate) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Versi aplikasi paling baru, belum ada update.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             } else {
                 Log.w(TAG, "Version check failed: ${response.code()}")
+                if (showToastIfUpToDate) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Gagal memeriksa update. Coba lagi nanti.", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error checking for updates", e)
+            if (showToastIfUpToDate) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
     fun downloadApk(context: Context, downloadUrl: String): Long {
+        Log.d(TAG, "Starting download from: $downloadUrl")
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val uri = Uri.parse(downloadUrl)
 
-        // Clear existing file if any
-        val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        // Use internal external directory (no permission needed)
+        val downloadFolder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
         val apkFile = File(downloadFolder, FILE_NAME)
         if (apkFile.exists()) {
-            apkFile.delete()
+            val deleted = apkFile.delete()
+            Log.d(TAG, "Existing APK deleted: $deleted")
         }
 
-        val request = DownloadManager.Request(uri)
-            .setTitle("Updating TehAtlas")
-            .setDescription("Downloading latest version...")
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, FILE_NAME)
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
+        try {
+            val request = DownloadManager.Request(uri)
+                .setTitle("Updating TehAtlas")
+                .setDescription("Downloading latest version...")
+                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, FILE_NAME)
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
 
-        val downloadId = downloadManager.enqueue(request)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                request.setRequiresCharging(false)
+                request.setRequiresDeviceIdle(false)
+            }
 
-        val onComplete = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context?, intent: Intent?) {
-                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-                if (id == downloadId) {
-                    try {
-                        context.unregisterReceiver(this)
-                    } catch (_: Exception) {}
+            val downloadId = downloadManager.enqueue(request)
+            Log.d(TAG, "Download enqueued with ID: $downloadId")
+
+            val onComplete = object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context?, intent: Intent?) {
+                    val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+                    if (id == downloadId) {
+                        Log.d(TAG, "Download $id complete notification received")
+                        try {
+                            context.unregisterReceiver(this)
+                        } catch (_: Exception) {}
+                    }
                 }
             }
-        }
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(
-                onComplete,
-                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                Context.RECEIVER_EXPORTED
-            )
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            context.registerReceiver(
-                onComplete,
-                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            )
-        }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(
+                    onComplete,
+                    IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    Context.RECEIVER_EXPORTED
+                )
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                context.registerReceiver(
+                    onComplete,
+                    IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+                )
+            }
 
-        return downloadId
+            return downloadId
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to enqueue download", e)
+            Toast.makeText(context, "Gagal memulai unduhan: ${e.message}", Toast.LENGTH_LONG).show()
+            return -1L
+        }
     }
 
     fun getDownloadProgress(context: Context, downloadId: Long): Float {
@@ -146,12 +178,17 @@ object AppUpdater {
         val cursor = downloadManager.query(query)
 
         if (cursor != null && cursor.moveToFirst()) {
-            val bytesDownloaded = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-            val bytesTotal = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+            val bytesDownloaded = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+            val bytesTotal = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
 
             cursor.close()
             if (bytesTotal > 0) {
-                return bytesDownloaded.toFloat() / bytesTotal.toFloat()
+                val progress = bytesDownloaded.toFloat() / bytesTotal.toFloat()
+                if (progress > 0.95f) {
+                    Log.d(TAG, "Progress: $progress ($bytesDownloaded / $bytesTotal), Status: $status")
+                }
+                return progress
             }
         }
         return 0f
@@ -165,14 +202,42 @@ object AppUpdater {
         var finished = false
         if (cursor != null && cursor.moveToFirst()) {
             val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-            finished = status == DownloadManager.STATUS_SUCCESSFUL
+            
+            when (status) {
+                DownloadManager.STATUS_SUCCESSFUL -> {
+                    finished = true
+                }
+                DownloadManager.STATUS_FAILED -> {
+                    val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                    Log.e(TAG, "Download failed with reason: $reason")
+                    finished = true
+                }
+                DownloadManager.STATUS_PAUSED -> {
+                    val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                    Log.d(TAG, "Download paused with reason: $reason")
+                }
+            }
             cursor.close()
         }
         return finished
     }
 
+    fun isDownloadSuccessful(context: Context, downloadId: Long): Boolean {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        val cursor = downloadManager.query(query)
+
+        var successful = false
+        if (cursor != null && cursor.moveToFirst()) {
+            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            successful = status == DownloadManager.STATUS_SUCCESSFUL
+            cursor.close()
+        }
+        return successful
+    }
+
     fun installApk(context: Context) {
-        val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadFolder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
         val apkFile = File(downloadFolder, FILE_NAME)
 
         if (apkFile.exists()) {
