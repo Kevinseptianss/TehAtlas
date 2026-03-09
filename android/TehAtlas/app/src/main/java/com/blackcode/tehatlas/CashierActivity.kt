@@ -225,8 +225,7 @@ fun CashierDashboard(
 }
 
 fun ProductDto.getStock(context: android.content.Context): Int {
-    val outletId = SessionManager.getInstance(context).getOutletId()
-    return this.outletStock[outletId] ?: 0
+    return this.stock
 }
 
 // ─── Modern Split-View POS Screen ──────────────────────────────────────

@@ -31,8 +31,11 @@ func GetAdminDashboard(c *gin.Context) {
 	outletsCollection := database.GetCollection("outlets")
 	outletsCount, _ := outletsCollection.CountDocuments(c, bson.M{})
 
-	productsCollection := database.GetCollection("products")
-	totalProductsCount, _ := productsCollection.CountDocuments(c, bson.M{})
+	warehouseItemsCollection := database.GetCollection("warehouse_items")
+	outletItemsCollection := database.GetCollection("outlet_items")
+	whCount, _ := warehouseItemsCollection.CountDocuments(c, bson.M{})
+	otCount, _ := outletItemsCollection.CountDocuments(c, bson.M{})
+	totalProductsCount := whCount + otCount
 
 	invoicesCollection := database.GetCollection("invoices")
 	totalInvoices, _ := invoicesCollection.CountDocuments(c, bson.M{})
@@ -55,9 +58,16 @@ func GetAdminDashboard(c *gin.Context) {
 		}
 	}
 
-	cursor, _ = productsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
-	var products []models.Product
-	cursor.All(c, &products)
+	// We need to check both collections for cost price information in admin dashboard
+	cursorWH, _ := warehouseItemsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
+	var productsWH []models.Product
+	cursorWH.All(c, &productsWH)
+
+	cursorOT, _ := outletItemsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
+	var productsOT []models.Product
+	cursorOT.All(c, &productsOT)
+
+	products := append(productsWH, productsOT...)
 
 	costMap := make(map[primitive.ObjectID]float64)
 	nameMap := make(map[primitive.ObjectID]string)
@@ -428,10 +438,18 @@ func GetOutletStats(c *gin.Context) {
 		}
 	}
 
-	productsCollection := database.GetCollection("products")
-	cursor, _ = productsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
-	var products []models.Product
-	cursor.All(c, &products)
+	warehouseItemsCollection := database.GetCollection("warehouse_items")
+	outletItemsCollection := database.GetCollection("outlet_items")
+	// We need to check both collections for cost price information in admin dashboard
+	cursorWH, _ := warehouseItemsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
+	var productsWH []models.Product
+	cursorWH.All(c, &productsWH)
+
+	cursorOT, _ := outletItemsCollection.Find(c, bson.M{"_id": bson.M{"$in": productIDs}})
+	var productsOT []models.Product
+	cursorOT.All(c, &productsOT)
+
+	products := append(productsWH, productsOT...)
 
 	costMap := make(map[primitive.ObjectID]float64)
 	nameMap := make(map[primitive.ObjectID]string)
@@ -518,9 +536,7 @@ func GetOutletStats(c *gin.Context) {
 		dailyRevenue = append(dailyRevenue, map[string]interface{}{"date": day, "revenue": rev})
 	}
 
-	outletIDStr := objID.Hex()
-	stockUpdateKey := "outlet_stock." + outletIDStr
-	cursor, _ = productsCollection.Find(c, bson.M{stockUpdateKey: bson.M{"$exists": true}})
+	cursor, _ = outletItemsCollection.Find(c, bson.M{"location_id": objID})
 	var allOutletItems []models.Product
 	cursor.All(c, &allOutletItems)
 

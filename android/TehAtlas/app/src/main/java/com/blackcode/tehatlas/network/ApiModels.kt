@@ -77,14 +77,16 @@ data class DailyRevenueDto(
 // ─── Products ────────────────────────────────────────────────────────
 data class ProductDto(
     @SerializedName("id") val id: String? = null,
+    @SerializedName("location_id") val locationId: String? = null,
     @SerializedName("name") val name: String,
     @SerializedName("description") val description: String? = null,
     @SerializedName("sku") val sku: String? = null,
     @SerializedName("category") val category: String? = null,
     @SerializedName("cost_price") val costPrice: Double = 0.0,
     @SerializedName("unit_price") val unitPrice: Double = 0.0,
-    @SerializedName("warehouse_stock") val warehouseStock: Int = 0,
-    @SerializedName("outlet_stock") val outletStock: Map<String, Int> = emptyMap(),
+    @SerializedName("stock") val stock: Int = 0,
+    @SerializedName("warehouse_stock") val warehouseStock: Int = 0, // Deprecated
+    @SerializedName("outlet_stock") val outletStock: Map<String, Int> = emptyMap(), // Deprecated
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("updated_at") val updatedAt: String? = null
 )

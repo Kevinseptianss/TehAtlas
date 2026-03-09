@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SearchItems searches for items across warehouse and outlet collections
@@ -22,14 +23,36 @@ func SearchItems(c *gin.Context) {
 		return
 	}
 
+	outletID, exists := c.Get("outlet_id")
+	var outletObjID *primitive.ObjectID
+	if exists && outletID != nil {
+		switch v := outletID.(type) {
+		case primitive.ObjectID:
+			outletObjID = &v
+		case string:
+			if oid, err := primitive.ObjectIDFromHex(v); err == nil {
+				outletObjID = &oid
+			}
+		}
+	}
+
 	// Search products
-	collection := database.GetCollection("products")
-	cursor, err := collection.Find(c, bson.M{
+	var collection *mongo.Collection
+	if outletObjID != nil {
+		collection = database.GetCollection("outlet_items")
+	} else {
+		collection = database.GetCollection("warehouse_items")
+	}
+
+	filter := bson.M{
+		"location_id": outletObjID,
 		"$or": []bson.M{
 			{"name": bson.M{"$regex": query, "$options": "i"}},
 			{"sku": bson.M{"$regex": query, "$options": "i"}},
 		},
-	})
+	}
+
+	cursor, err := collection.Find(c, filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
@@ -43,8 +66,7 @@ func SearchItems(c *gin.Context) {
 	cursor.All(c, &products)
 
 	result := map[string]interface{}{
-		"warehouse_items": products,
-		"outlet_items":    products,
+		"items": products,
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
@@ -65,9 +87,21 @@ func GetItemDetails(c *gin.Context) {
 		return
 	}
 
-	collection := database.GetCollection("products")
+	// Check warehouse first
+	warehouseCollection := database.GetCollection("warehouse_items")
 	var product models.Product
-	err = collection.FindOne(c, bson.M{"_id": objID}).Decode(&product)
+	err = warehouseCollection.FindOne(c, bson.M{"_id": objID}).Decode(&product)
+	if err == nil {
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data:    product,
+		})
+		return
+	}
+
+	// Then check outlets
+	outletCollection := database.GetCollection("outlet_items")
+	err = outletCollection.FindOne(c, bson.M{"_id": objID}).Decode(&product)
 	if err == nil {
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success: true,

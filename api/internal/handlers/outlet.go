@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -79,11 +80,11 @@ func GetOutletDashboard(c *gin.Context) {
 	tomorrow := today.Add(24 * time.Hour)
 
 	todaySalesPipeline := mongo.Pipeline{
-		{{"$match", bson.M{
+		bson.D{{Key: "$match", Value: bson.M{
 			"outlet_id": outletObjID,
 			"sale_date": bson.M{"$gte": today, "$lt": tomorrow},
 		}}},
-		{{"$group", bson.M{
+		bson.D{{Key: "$group", Value: bson.M{
 			"_id":         nil,
 			"today_sales": bson.M{"$sum": "$total_amount"},
 			"sale_count":  bson.M{"$sum": 1},
@@ -168,10 +169,27 @@ func GetOutletDashboard(c *gin.Context) {
 
 // GetOutletItems returns list of outlet items
 func GetOutletItems(c *gin.Context) {
-	collection := database.GetCollection("products")
+	// Get outlet ID from context
+	outletID, exists := c.Get("outlet_id")
+	if !exists || outletID == nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Message: "Outlet ID required",
+		})
+		return
+	}
 
+	var outletObjID primitive.ObjectID
+	switch v := outletID.(type) {
+	case primitive.ObjectID:
+		outletObjID = v
+	case string:
+		outletObjID, _ = primitive.ObjectIDFromHex(v)
+	}
+
+	collection := database.GetCollection("outlet_items")
 	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := collection.Find(c, bson.M{}, opts)
+	cursor, err := collection.Find(c, bson.M{"location_id": outletObjID}, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
@@ -214,19 +232,31 @@ func CreateOutletItem(c *gin.Context) {
 		return
 	}
 
+	outletID, _ := c.Get("outlet_id")
+	var outletObjID primitive.ObjectID
+	if outletID != nil {
+		switch v := outletID.(type) {
+		case primitive.ObjectID:
+			outletObjID = v
+		case string:
+			outletObjID, _ = primitive.ObjectIDFromHex(v)
+		}
+	}
+
 	item := models.Product{
+		ID:          primitive.NewObjectID(),
+		LocationID:  &outletObjID,
 		Name:        req.Name,
 		Description: req.Description,
 		SKU:         req.SKU,
 		Category:    req.Category,
 		UnitPrice:   req.UnitPrice,
-		OutletStock: make(map[string]int),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 
-	collection := database.GetCollection("products")
-	result, err := collection.InsertOne(c, item)
+	collection := database.GetCollection("outlet_items")
+	_, err := collection.InsertOne(c, item)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
@@ -235,7 +265,6 @@ func CreateOutletItem(c *gin.Context) {
 		return
 	}
 
-	item.ID = result.InsertedID.(primitive.ObjectID)
 	c.JSON(http.StatusCreated, models.APIResponse{
 		Success: true,
 		Message: "Item created successfully",
@@ -255,7 +284,7 @@ func DeleteOutletItem(c *gin.Context) {
 		return
 	}
 
-	collection := database.GetCollection("products")
+	collection := database.GetCollection("outlet_items")
 	result, err := collection.DeleteOne(c, bson.M{"_id": objID})
 	if err != nil || result.DeletedCount == 0 {
 		c.JSON(http.StatusNotFound, models.APIResponse{
@@ -300,7 +329,18 @@ func UpdateOutletItem(c *gin.Context) {
 		return
 	}
 
-	collection := database.GetCollection("products")
+	outletID, exists := c.Get("outlet_id")
+	var outletObjID primitive.ObjectID
+	if exists && outletID != nil {
+		switch v := outletID.(type) {
+		case primitive.ObjectID:
+			outletObjID = v
+		case string:
+			outletObjID, _ = primitive.ObjectIDFromHex(v)
+		}
+	}
+
+	collection := database.GetCollection("outlet_items")
 	var product models.Product
 	err = collection.FindOne(c, bson.M{"_id": objID}).Decode(&product)
 	if err != nil {
@@ -322,44 +362,25 @@ func UpdateOutletItem(c *gin.Context) {
 
 	// Handle Stock Adjustment if provided
 	if req.Stock != nil {
-		outletID, exists := c.Get("outlet_id")
-		var outletObjID primitive.ObjectID
-		if exists && outletID != nil {
-			switch v := outletID.(type) {
-			case primitive.ObjectID:
-				outletObjID = v
-			case string:
-				outletObjID, _ = primitive.ObjectIDFromHex(v)
+		newStock := *req.Stock
+		changeQty := newStock - product.Stock
+
+		if changeQty != 0 {
+			update["stock"] = newStock
+
+			// Log adjustment to stock_history
+			historyCollection := database.GetCollection("stock_history")
+			history := models.StockHistory{
+				ID:         primitive.NewObjectID(),
+				LocationID: &outletObjID,
+				ProductID:  objID,
+				Type:       "adjustment",
+				ChangeQty:  changeQty,
+				Balance:    newStock,
+				CostPrice:  product.CostPrice,
+				CreatedAt:  time.Now(),
 			}
-		}
-
-		if !outletObjID.IsZero() {
-			outletIDStr := outletObjID.Hex()
-			currentStock := product.OutletStock[outletIDStr]
-			newStock := *req.Stock
-			changeQty := newStock - currentStock
-
-			if changeQty != 0 {
-				if product.OutletStock == nil {
-					product.OutletStock = make(map[string]int)
-				}
-				product.OutletStock[outletIDStr] = newStock
-				update["outlet_stock."+outletIDStr] = newStock
-
-				// Log adjustment to stock_history
-				historyCollection := database.GetCollection("stock_history")
-				history := models.StockHistory{
-					ID:         primitive.NewObjectID(),
-					LocationID: &outletObjID,
-					ProductID:  objID,
-					Type:       "adjustment",
-					ChangeQty:  changeQty,
-					Balance:    newStock,
-					CostPrice:  product.CostPrice,
-					CreatedAt:  time.Now(),
-				}
-				historyCollection.InsertOne(c, history)
-			}
+			historyCollection.InsertOne(c, history)
 		}
 	}
 
@@ -508,38 +529,86 @@ func ReceivePurchase(c *gin.Context) {
 	}
 
 	// Increment stock and log history
-	itemsCollection := database.GetCollection("products")
+	itemsCollection := database.GetCollection("outlet_items")
 	historyCollection := database.GetCollection("stock_history")
 
-	outletIDStr := purchase.OutletID.Hex()
-	stockUpdateKey := "outlet_stock." + outletIDStr
-
 	for _, item := range purchase.Items {
-		// Use FindOneAndUpdate to accurately get the updated balance
-		var updatedItem models.Product
-		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-		err := itemsCollection.FindOneAndUpdate(
-			c,
-			bson.M{"_id": item.ProductID},
-			bson.M{"$inc": bson.M{stockUpdateKey: item.Quantity}},
-			opts,
-		).Decode(&updatedItem)
+		// Find or Create this specific product for this outlet
+		var outletProduct models.Product
 
-		if err == nil {
-			// Log history
-			history := models.StockHistory{
-				ID:          primitive.NewObjectID(),
-				LocationID:  &purchase.OutletID,
-				ProductID:   item.ProductID,
-				Type:        "purchase",
-				ChangeQty:   item.Quantity,
-				Balance:     updatedItem.OutletStock[outletIDStr],
-				CostPrice:   item.UnitPrice,
-				ReferenceID: purchase.ID,
-				CreatedAt:   time.Now(),
-			}
-			historyCollection.InsertOne(c, history)
+		// 1. Try to find by SKU for this specific outlet
+		// Using the "item.ProductID" as the reference to the Warehouse Product (Template)
+		err := itemsCollection.FindOne(c, bson.M{
+			"location_id": purchase.OutletID,
+			"sku":         item.ProductID.Hex(), // Old logic kept for compatibility
+		}).Decode(&outletProduct)
+
+		// 2. If not found, try finding by actual SKU if available in the future or via some other link
+		if err != nil {
+			// Let's check if the product name and outlet match as a fallback
+			err = itemsCollection.FindOne(c, bson.M{
+				"location_id": purchase.OutletID,
+				"name":        item.ProductName,
+			}).Decode(&outletProduct)
 		}
+
+		if err == mongo.ErrNoDocuments {
+			// Create new product for this outlet
+			outletProduct = models.Product{
+				ID:         primitive.NewObjectID(),
+				LocationID: &purchase.OutletID,
+				Name:       item.ProductName,
+				SKU:        item.ProductID.Hex(), // Link to warehouse product ID
+				Stock:      0,
+				CostPrice:  item.UnitPrice,
+				UnitPrice:  item.UnitPrice * 1.5, // Default markup
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+			}
+			_, insertErr := itemsCollection.InsertOne(c, outletProduct)
+			if insertErr != nil {
+				log.Printf("Failed to create outlet product during receive: %v", insertErr)
+				continue
+			}
+		}
+
+		oldStock := float64(outletProduct.Stock)
+		newStock := outletProduct.Stock + item.Quantity
+		oldCost := outletProduct.CostPrice
+
+		var newCost float64
+		if float64(newStock) > 0 {
+			// Weighted average cost: (old_total_cost + new_total_cost) / total_quantity
+			newCost = ((oldStock * oldCost) + (float64(item.Quantity) * item.UnitPrice)) / float64(newStock)
+		} else {
+			newCost = item.UnitPrice
+		}
+
+		itemsCollection.UpdateOne(
+			c,
+			bson.M{"_id": outletProduct.ID},
+			bson.M{
+				"$set": bson.M{
+					"stock":      newStock,
+					"cost_price": newCost,
+					"updated_at": time.Now(),
+				},
+			},
+		)
+
+		// Log history
+		history := models.StockHistory{
+			ID:          primitive.NewObjectID(),
+			LocationID:  &purchase.OutletID,
+			ProductID:   outletProduct.ID,
+			Type:        "purchase",
+			ChangeQty:   item.Quantity,
+			Balance:     newStock,
+			CostPrice:   item.UnitPrice,
+			ReferenceID: purchase.ID,
+			CreatedAt:   time.Now(),
+		}
+		historyCollection.InsertOne(c, history)
 	}
 
 	purchase.Status = "received"
@@ -630,20 +699,18 @@ func CreateSale(c *gin.Context) {
 	sale.ReceiptNumber = generateReceiptNumber()
 
 	// Validate and update inventory for each item
-	productsCollection := database.GetCollection("products")
+	productsCollection := database.GetCollection("outlet_items")
 	historyCollection := database.GetCollection("stock_history")
 
-	outletIDStr := outletObjID.Hex()
-	stockUpdateKey := "outlet_stock." + outletIDStr
-
 	for i, item := range sale.Items {
-		// Snapshot product details
+		// Find this specific product for this outlet
 		var product models.Product
-		err := productsCollection.FindOne(c, bson.M{"_id": item.ProductID}).Decode(&product)
-		if err == nil {
-			sale.Items[i].ProductName = product.Name
-			sale.Items[i].CostPrice = product.CostPrice
-		} else {
+		err := productsCollection.FindOne(c, bson.M{
+			"location_id": outletObjID,
+			"_id":         item.ProductID,
+		}).Decode(&product)
+
+		if err != nil {
 			c.JSON(http.StatusBadRequest, models.APIResponse{
 				Success: false,
 				Message: "Item not found in inventory: " + item.ProductID.Hex(),
@@ -651,26 +718,32 @@ func CreateSale(c *gin.Context) {
 			return
 		}
 
+		sale.Items[i].ProductName = product.Name
+		sale.Items[i].CostPrice = product.CostPrice
+
 		// Decrement stock and get updated balance
-		var updatedItem models.Product
-		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-		err = productsCollection.FindOneAndUpdate(
+		newStock := product.Stock - item.Quantity
+		_, err = productsCollection.UpdateOne(
 			c,
-			bson.M{"_id": item.ProductID},
-			bson.M{"$inc": bson.M{stockUpdateKey: -item.Quantity}},
-			opts,
-		).Decode(&updatedItem)
+			bson.M{"_id": product.ID},
+			bson.M{
+				"$set": bson.M{
+					"stock":      newStock,
+					"updated_at": time.Now(),
+				},
+			},
+		)
 
 		if err == nil {
 			// Log history
 			history := models.StockHistory{
 				ID:          primitive.NewObjectID(),
 				LocationID:  &outletObjID,
-				ProductID:   item.ProductID,
+				ProductID:   product.ID,
 				Type:        "sale",
 				ChangeQty:   -item.Quantity,
-				Balance:     updatedItem.OutletStock[outletIDStr],
-				CostPrice:   updatedItem.CostPrice,
+				Balance:     newStock,
+				CostPrice:   product.CostPrice,
 				ReferenceID: sale.ID,
 				CreatedAt:   time.Now(),
 			}
@@ -688,8 +761,6 @@ func CreateSale(c *gin.Context) {
 		})
 		return
 	}
-
-	// Old inventory_transactions collection logging removed in favor of outlet_stock_history handling above
 
 	c.JSON(http.StatusCreated, models.APIResponse{
 		Success: true,

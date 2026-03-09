@@ -56,6 +56,9 @@ fun WarehouseDashboard(
 ) {
     var currentScreen by remember { mutableStateOf(WarehouseScreen.DASHBOARD) }
     var selectedItemForHistory by remember { mutableStateOf<ProductDto?>(null) }
+    var itemToEdit by remember { mutableStateOf<ProductDto?>(null) }
+    var itemToDelete by remember { mutableStateOf<ProductDto?>(null) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
 
     Scaffold(
         bottomBar = {
@@ -93,7 +96,8 @@ fun WarehouseDashboard(
                 onShowHistory = { item ->
                     selectedItemForHistory = item
                     currentScreen = WarehouseScreen.STOCK_HISTORY
-                }
+                },
+                refreshTrigger = refreshTrigger
             )
             WarehouseScreen.PURCHASING -> WarehousePurchasingScreen(padding)
             WarehouseScreen.INVOICING -> WarehouseInvoicingScreen(padding)
@@ -102,10 +106,64 @@ fun WarehouseDashboard(
                 selectedItemForHistory?.let { item ->
                     WarehouseStockHistoryScreen(
                         product = item,
-                        onBack = { currentScreen = WarehouseScreen.INVENTORY }
+                        onBack = { currentScreen = WarehouseScreen.INVENTORY },
+                        onEdit = { 
+                            itemToEdit = item
+                        },
+                        onDelete = {
+                            itemToDelete = item
+                        }
                     )
                 }
             }
+        }
+
+        if (itemToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { itemToDelete = null },
+                title = { Text("Hapus Produk", color = Error) },
+                text = { Text("Apakah Anda yakin ingin menghapus '${itemToDelete?.name}'? Tindakan ini tidak dapat dibatalkan.") },
+                confirmButton = {
+                    val context = LocalContext.current
+                    val scope = rememberCoroutineScope()
+                    val repository = remember { TehAtlasRepository(SessionManager.getInstance(context)) }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                val res = repository.deleteWarehouseItem(itemToDelete?.id ?: "")
+                                if (res is Resource.Success) {
+                                    android.widget.Toast.makeText(context, "Produk berhasil dihapus", android.widget.Toast.LENGTH_SHORT).show()
+                                    itemToDelete = null
+                                    selectedItemForHistory = null
+                                    refreshTrigger++
+                                    currentScreen = WarehouseScreen.INVENTORY
+                                } else {
+                                    android.widget.Toast.makeText(context, "Gagal menghapus produk", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Error)
+                    ) {
+                        Text("Hapus", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { itemToDelete = null }) { Text("Batal") }
+                }
+            )
+        }
+
+        if (itemToEdit != null) {
+            WarehouseEditProductScreen(
+                product = itemToEdit!!,
+                onBack = { itemToEdit = null },
+                onProductUpdated = {
+                    itemToEdit = null
+                    selectedItemForHistory = null
+                    refreshTrigger++
+                    currentScreen = WarehouseScreen.INVENTORY
+                }
+            )
         }
     }
 }
@@ -316,17 +374,20 @@ fun WarehouseDashboardScreen(padding: PaddingValues) {
 @Composable
 fun WarehouseInventoryScreen(
     padding: PaddingValues,
-    onShowHistory: (ProductDto) -> Unit
+    onShowHistory: (ProductDto) -> Unit,
+    refreshTrigger: Int = 0
 ) {
     var showAddProduct by remember { mutableStateOf(false) }
-    var refreshTrigger by remember { mutableIntStateOf(0) }
+    var internalRefreshTrigger by remember { mutableIntStateOf(0) }
+    
+    val combinedRefreshTrigger = remember(refreshTrigger, internalRefreshTrigger) { refreshTrigger + internalRefreshTrigger }
 
     if (showAddProduct) {
         WarehouseAddProductScreen(
             onBack = { showAddProduct = false },
             onProductCreated = {
                 showAddProduct = false
-                refreshTrigger++
+                internalRefreshTrigger++
             }
         )
     } else {
@@ -334,7 +395,7 @@ fun WarehouseInventoryScreen(
             padding = padding,
             onAddProduct = { showAddProduct = true },
             onShowHistory = onShowHistory,
-            refreshTrigger = refreshTrigger
+            refreshTrigger = combinedRefreshTrigger
         )
     }
 }
@@ -501,13 +562,17 @@ fun WarehouseInventoryListScreen(
                 colors = CardDefaults.cardColors(containerColor = Surface)
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp))
-                            .background(Primary.copy(alpha = 0.08f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.Inventory, null, tint = Primary, modifier = Modifier.size(22.dp))
-                    }
+                        Box(
+                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp))
+                                .background(Primary.copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "${item.stock}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Primary
+                            )
+                        }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -547,7 +612,9 @@ fun WarehouseInventoryListScreen(
 @Composable
 fun WarehouseStockHistoryScreen(
     product: ProductDto,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val context = LocalContext.current
     val repository = remember { TehAtlasRepository(SessionManager.getInstance(context)) }
@@ -593,6 +660,14 @@ fun WarehouseStockHistoryScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onEdit) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Primary)
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Hapus", tint = Error)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -930,6 +1005,213 @@ fun WarehouseAddProductScreen(onBack: () -> Unit, onProductCreated: () -> Unit) 
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+// ─── Edit Product Screen ───────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WarehouseEditProductScreen(
+    product: ProductDto,
+    onBack: () -> Unit,
+    onProductUpdated: () -> Unit
+) {
+    val context = LocalContext.current
+    val repository = remember { TehAtlasRepository(SessionManager.getInstance(context)) }
+    val coroutineScope = rememberCoroutineScope()
+
+    var productName by remember { mutableStateOf(product.name) }
+    var sku by remember { mutableStateOf(product.sku ?: "") }
+    var category by remember { mutableStateOf(product.category ?: "") }
+    var description by remember { mutableStateOf(product.description ?: "") }
+    var isUpdating by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    var existingCategories by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        when (val result = repository.getWarehouseItems()) {
+            is Resource.Success -> {
+                existingCategories = result.data?.mapNotNull { it.category }
+                    ?.filter { it.isNotBlank() }
+                    ?.distinct()
+                    ?.sorted() ?: emptyList()
+            }
+            else -> {}
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Edit Produk", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+            )
+        },
+        containerColor = Background
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            "Informasi Produk",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = TextPrimary
+                        )
+
+                        OutlinedTextField(
+                            value = productName, onValueChange = { productName = it },
+                            label = { Text("Nama Produk") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = sku, onValueChange = { sku = it },
+                            label = { Text("SKU") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+
+                        var categoryExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = categoryExpanded,
+                            onExpandedChange = { categoryExpanded = !categoryExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = category, onValueChange = { category = it },
+                                label = { Text("Kategori") },
+                                leadingIcon = { Icon(Icons.Filled.Category, contentDescription = "Category", tint = Primary) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    focusedBorderColor = Primary,
+                                    unfocusedBorderColor = DividerColor,
+                                    cursorColor = Primary,
+                                    focusedLabelColor = Primary
+                                )
+                            )
+                            if (existingCategories.isNotEmpty()) {
+                                ExposedDropdownMenu(
+                                    expanded = categoryExpanded,
+                                    onDismissRequest = { categoryExpanded = false },
+                                    modifier = Modifier.background(Surface)
+                                ) {
+                                    existingCategories.forEach { cat ->
+                                        DropdownMenuItem(
+                                            text = { Text(cat, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)) },
+                                            onClick = { category = cat; categoryExpanded = false },
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = description, onValueChange = { description = it },
+                            label = { Text("Deskripsi (Opsional)") },
+                            modifier = Modifier.fillMaxWidth(), minLines = 2,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (errorMsg != null) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            errorMsg ?: "",
+                            modifier = Modifier.padding(14.dp),
+                            style = MaterialTheme.typography.bodyMedium, color = Error
+                        )
+                    }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        isUpdating = true
+                        errorMsg = null
+                        coroutineScope.launch {
+                            val fields = mapOf(
+                                "name" to productName,
+                                "sku" to sku,
+                                "category" to category,
+                                "description" to description
+                            )
+                            val result = repository.updateWarehouseItem(product.id ?: "", fields)
+                            when (result) {
+                                is Resource.Success -> {
+                                    android.widget.Toast.makeText(context, "Produk berhasil diperbarui", android.widget.Toast.LENGTH_SHORT).show()
+                                    onProductUpdated()
+                                }
+                                is Resource.Error -> { errorMsg = result.message; isUpdating = false }
+                                else -> {}
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = productName.isNotEmpty() && sku.isNotEmpty() && category.isNotEmpty() && !isUpdating,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    if (isUpdating) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
+                    } else {
+                        Text("Simpan Perubahan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
         }
     }
 }
@@ -1361,7 +1643,7 @@ fun WarehouseAddPurchaseScreen(onBack: () -> Unit, onPurchaseCreated: () -> Unit
         items(purchaseItems) { item ->
             val product = products.find { it.id == item.productId }
             val itemName = product?.name ?: item.productId
-            val stockInfo = product?.warehouseStock?.toString() ?: "0"
+            val stockInfo = product?.stock?.toString() ?: "0"
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),

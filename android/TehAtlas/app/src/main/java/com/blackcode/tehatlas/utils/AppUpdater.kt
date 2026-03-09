@@ -108,9 +108,16 @@ object AppUpdater {
     }
 
     fun downloadApk(context: Context, downloadUrl: String): Long {
-        Log.d(TAG, "Starting download from: $downloadUrl")
+        // Add cache busting parameter
+        val versionedUrl = if (downloadUrl.contains("?")) {
+            "$downloadUrl&v=${remoteVersion?.versionCode ?: System.currentTimeMillis()}"
+        } else {
+            "$downloadUrl?v=${remoteVersion?.versionCode ?: System.currentTimeMillis()}"
+        }
+        
+        Log.d(TAG, "Starting download from: $versionedUrl")
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val uri = Uri.parse(downloadUrl)
+        val uri = Uri.parse(versionedUrl)
 
         // Use internal external directory (no permission needed)
         val downloadFolder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)

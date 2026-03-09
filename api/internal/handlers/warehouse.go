@@ -32,11 +32,11 @@ func GetWarehouseDashboard(c *gin.Context) {
 	tomorrow := today.Add(24 * time.Hour)
 
 	todaySalesPipeline := mongo.Pipeline{
-		{{"$match", bson.M{
+		bson.D{{Key: "$match", Value: bson.M{
 			"invoice_date": bson.M{"$gte": today, "$lt": tomorrow},
 			"status":       bson.M{"$ne": "cancelled"},
 		}}},
-		{{"$group", bson.M{
+		bson.D{{Key: "$group", Value: bson.M{
 			"_id":           nil,
 			"today_sales":   bson.M{"$sum": "$total_amount"},
 			"invoice_count": bson.M{"$sum": 1},
@@ -60,11 +60,11 @@ func GetWarehouseDashboard(c *gin.Context) {
 		cursor.Close(c)
 	}
 
-	// Get low stock alerts (items with quantity < 10, for example)
-	// For now, we'll check products and assume low stock is < 10
-	// In a real implementation, this would be configurable
-	productsCollection := database.GetCollection("products")
-	lowStockCount, err := productsCollection.CountDocuments(c, bson.M{"warehouse_stock": bson.M{"$lt": 10}})
+	productsCollection := database.GetCollection("warehouse_items")
+	lowStockCount, err := productsCollection.CountDocuments(c, bson.M{
+		"location_id": nil,
+		"stock":       bson.M{"$lt": 10},
+	})
 	if err != nil {
 		lowStockCount = 0
 	}
@@ -99,10 +99,9 @@ func GetWarehouseDashboard(c *gin.Context) {
 
 // GetWarehouseItems returns list of warehouse items
 func GetWarehouseItems(c *gin.Context) {
-	collection := database.GetCollection("products")
-
+	collection := database.GetCollection("warehouse_items")
 	opts := options.Find().SetSort(bson.M{"created_at": -1})
-	cursor, err := collection.Find(c, bson.M{}, opts)
+	cursor, err := collection.Find(c, bson.M{"location_id": nil}, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
@@ -139,13 +138,11 @@ func CreateWarehouseItem(c *gin.Context) {
 	}
 
 	item.ID = primitive.NewObjectID()
+	item.LocationID = nil // Warehouse
 	item.CreatedAt = time.Now()
 	item.UpdatedAt = time.Now()
-	if item.OutletStock == nil {
-		item.OutletStock = make(map[string]int)
-	}
 
-	collection := database.GetCollection("products")
+	collection := database.GetCollection("warehouse_items")
 	_, err := collection.InsertOne(c, item)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -156,14 +153,14 @@ func CreateWarehouseItem(c *gin.Context) {
 	}
 
 	// Log initial stock history
-	if item.WarehouseStock > 0 {
+	if item.Stock > 0 {
 		historyCollection := database.GetCollection("stock_history")
 		history := models.StockHistory{
 			ID:        primitive.NewObjectID(),
 			ProductID: item.ID,
 			Type:      "adjustment",
-			ChangeQty: item.WarehouseStock,
-			Balance:   item.WarehouseStock,
+			ChangeQty: item.Stock,
+			Balance:   item.Stock,
 			CostPrice: item.CostPrice,
 			CreatedAt: time.Now(),
 		}
@@ -198,10 +195,10 @@ func UpdateWarehouseItem(c *gin.Context) {
 		return
 	}
 
-	collection := database.GetCollection("products") // Fixed collection name
+	collection := database.GetCollection("warehouse_items")
 
-	// Check if warehouse_stock is being updated to log history
-	if newStockVal, ok := updateData["warehouse_stock"]; ok {
+	// Check if stock is being updated to log history
+	if newStockVal, ok := updateData["stock"]; ok {
 		var product models.Product
 		err := collection.FindOne(c, bson.M{"_id": objID}).Decode(&product)
 		if err == nil {
@@ -215,7 +212,7 @@ func UpdateWarehouseItem(c *gin.Context) {
 				newStock = v
 			}
 
-			changeQty := newStock - product.WarehouseStock
+			changeQty := newStock - product.Stock
 			if changeQty != 0 {
 				historyCollection := database.GetCollection("stock_history")
 				history := models.StockHistory{
@@ -384,19 +381,51 @@ func UpdatePurchaseStatus(c *gin.Context) {
 	}
 
 	if req.Status == "received" && purchase.Status == "pending" {
-		productsCollection := database.GetCollection("products")
+		productsCollection := database.GetCollection("warehouse_items")
 		historyCollection := database.GetCollection("stock_history")
 
 		for _, item := range purchase.Items {
 			var product models.Product
+			// Try to find product by ID first
 			err := productsCollection.FindOne(c, bson.M{"_id": item.ProductID}).Decode(&product)
-			if err == nil {
-				oldStock := float64(product.WarehouseStock)
+
+			// If not found by ID, try finding by SKU (for new products added via purchase)
+			if err != nil && item.SKU != "" {
+				err = productsCollection.FindOne(c, bson.M{
+					"location_id": nil,
+					"sku":         item.SKU,
+				}).Decode(&product)
+			}
+
+			if err == mongo.ErrNoDocuments {
+				// Create new product if it doesn't exist
+				product = models.Product{
+					ID:         primitive.NewObjectID(),
+					LocationID: nil,
+					Name:       item.ProductName,
+					SKU:        item.SKU,
+					Category:   item.Category,
+					Stock:      item.Quantity,
+					CostPrice:  item.UnitCost,
+					UnitPrice:  item.UnitCost * 1.5, // Default markup if unknown
+					CreatedAt:  time.Now(),
+					UpdatedAt:  time.Now(),
+				}
+				_, insertErr := productsCollection.InsertOne(c, product)
+				if insertErr != nil {
+					log.Printf("Failed to create new product from purchase: %v", insertErr)
+					continue
+				}
+				// Update item.ProductID to the new product ID for history mapping
+				item.ProductID = product.ID
+			} else if err == nil {
+				// Update existing product
+				oldStock := float64(product.Stock)
 				oldCost := product.CostPrice
 				newAddedStock := float64(item.Quantity)
 				newTotalCost := item.TotalCost
 
-				newQuantity := product.WarehouseStock + item.Quantity
+				newQuantity := product.Stock + item.Quantity
 
 				var newCostPrice float64
 				if oldStock+newAddedStock > 0 {
@@ -407,28 +436,32 @@ func UpdatePurchaseStatus(c *gin.Context) {
 
 				productsCollection.UpdateOne(
 					c,
-					bson.M{"_id": item.ProductID},
+					bson.M{"_id": product.ID},
 					bson.M{
 						"$set": bson.M{
-							"warehouse_stock": newQuantity,
-							"cost_price":      newCostPrice,
-							"updated_at":      time.Now(),
+							"stock":      newQuantity,
+							"cost_price": newCostPrice,
+							"updated_at": time.Now(),
 						},
 					},
 				)
-
-				history := models.StockHistory{
-					ID:          primitive.NewObjectID(),
-					ProductID:   item.ProductID,
-					Type:        "purchase",
-					ChangeQty:   item.Quantity,
-					Balance:     newQuantity,
-					CostPrice:   item.UnitCost,
-					ReferenceID: objID,
-					CreatedAt:   time.Now(),
-				}
-				historyCollection.InsertOne(c, history)
+				product.Stock = newQuantity // For history logging below
+			} else {
+				log.Printf("Error finding product during purchase update: %v", err)
+				continue
 			}
+
+			history := models.StockHistory{
+				ID:          primitive.NewObjectID(),
+				ProductID:   product.ID,
+				Type:        "purchase",
+				ChangeQty:   item.Quantity,
+				Balance:     product.Stock,
+				CostPrice:   item.UnitCost,
+				ReferenceID: objID,
+				CreatedAt:   time.Now(),
+			}
+			historyCollection.InsertOne(c, history)
 		}
 	}
 
@@ -515,7 +548,7 @@ func CreateInvoice(c *gin.Context) {
 	}
 
 	// Deduct stock from products and construct OutletPurchase synced Items
-	productsCollection := database.GetCollection("products")
+	productsCollection := database.GetCollection("warehouse_items")
 
 	var outletPurchaseItems []models.OutletPurchaseItem
 
@@ -523,7 +556,7 @@ func CreateInvoice(c *gin.Context) {
 		var product models.Product
 		err := productsCollection.FindOne(c, bson.M{"_id": item.ProductID}).Decode(&product)
 		if err == nil {
-			newQuantity := product.WarehouseStock - item.Quantity
+			newQuantity := product.Stock - item.Quantity
 			if newQuantity < 0 {
 				newQuantity = 0 // Prevent negative stock
 			}
@@ -533,8 +566,8 @@ func CreateInvoice(c *gin.Context) {
 				bson.M{"_id": item.ProductID},
 				bson.M{
 					"$set": bson.M{
-						"warehouse_stock": newQuantity,
-						"updated_at":      time.Now(),
+						"stock":      newQuantity,
+						"updated_at": time.Now(),
 					},
 				},
 			)

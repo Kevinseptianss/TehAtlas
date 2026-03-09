@@ -17,19 +17,19 @@ type User struct {
 	UpdatedAt time.Time           `json:"updated_at" bson:"updated_at"`
 }
 
-// Product represents items available in the catalog (Unified from WarehouseItem and OutletItem)
+// Product represents items available in a specific location (Warehouse or Outlet)
 type Product struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name           string             `json:"name" bson:"name"`
-	Description    string             `json:"description" bson:"description"`
-	SKU            string             `json:"sku" bson:"sku"`
-	Category       string             `json:"category" bson:"category"`
-	CostPrice      float64            `json:"cost_price" bson:"cost_price"` // Used by warehouse
-	UnitPrice      float64            `json:"unit_price" bson:"unit_price"` // Standardized Selling Price
-	WarehouseStock int                `json:"warehouse_stock" bson:"warehouse_stock"`
-	OutletStock    map[string]int     `json:"outlet_stock" bson:"outlet_stock"` // Key: Outlet ID string -> Stock
-	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
+	ID          primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	LocationID  *primitive.ObjectID `json:"location_id,omitempty" bson:"location_id,omitempty"` // nil = Warehouse
+	Name        string              `json:"name" bson:"name"`
+	Description string              `json:"description" bson:"description"`
+	SKU         string              `json:"sku" bson:"sku"`
+	Category    string              `json:"category" bson:"category"`
+	Stock       int                 `json:"stock" bson:"stock"`
+	CostPrice   float64             `json:"cost_price" bson:"cost_price"` // Individual cost per location
+	UnitPrice   float64             `json:"unit_price" bson:"unit_price"` // Standardized Selling Price
+	CreatedAt   time.Time           `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at" bson:"updated_at"`
 }
 
 // Outlet represents a retail outlet
@@ -56,10 +56,13 @@ type Purchase struct {
 }
 
 type PurchaseItem struct {
-	ProductID primitive.ObjectID `json:"product_id" bson:"product_id"`
-	Quantity  int                `json:"quantity" bson:"quantity"`
-	UnitCost  float64            `json:"unit_cost" bson:"unit_cost"`
-	TotalCost float64            `json:"total_cost" bson:"total_cost"`
+	ProductID   primitive.ObjectID `json:"product_id" bson:"product_id"`
+	ProductName string             `json:"product_name" bson:"product_name"`
+	SKU         string             `json:"sku" bson:"sku"`
+	Category    string             `json:"category" bson:"category"`
+	Quantity    int                `json:"quantity" bson:"quantity"`
+	UnitCost    float64            `json:"unit_cost" bson:"unit_cost"`
+	TotalCost   float64            `json:"total_cost" bson:"total_cost"`
 }
 
 // Invoice represents warehouse selling to outlets

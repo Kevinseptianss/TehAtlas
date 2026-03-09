@@ -823,6 +823,8 @@ fun WarehouseScreen(padding: PaddingValues) {
     var newUsername by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var isSavingUser by remember { mutableStateOf(false) }
+    var itemToEdit by remember { mutableStateOf<ProductDto?>(null) }
+    var itemToDelete by remember { mutableStateOf<ProductDto?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
 
     val loadData = suspend {
@@ -921,7 +923,8 @@ fun WarehouseScreen(padding: PaddingValues) {
     }
 
     // Full-screen Stock History
-    selectedStockItem?.let { item ->
+    if (selectedStockItem != null) {
+        val item = selectedStockItem!!
         LaunchedEffect(item.id) {
             isLoadingHistory = true
             val result = repository.getAdminStockHistory(item.id ?: "")
@@ -941,6 +944,14 @@ fun WarehouseScreen(padding: PaddingValues) {
                     navigationIcon = {
                         IconButton(onClick = { selectedStockItem = null }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { itemToEdit = item }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Primary)
+                        }
+                        IconButton(onClick = { itemToDelete = item }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Hapus", tint = Error)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
@@ -1058,10 +1069,53 @@ fun WarehouseScreen(padding: PaddingValues) {
                 }
             }
         }
-        return
-    }
+    } else {
 
-    Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
+        if (itemToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { itemToDelete = null },
+                title = { Text("Hapus Produk", color = Error) },
+                text = { Text("Apakah Anda yakin ingin menghapus '${itemToDelete?.name}'? Tindakan ini tidak dapat dibatalkan.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                val res = repository.deleteWarehouseItem(itemToDelete?.id ?: "")
+                                if (res is Resource.Success) {
+                                    android.widget.Toast.makeText(context, "Produk berhasil dihapus", android.widget.Toast.LENGTH_SHORT).show()
+                                    itemToDelete = null
+                                    selectedStockItem = null
+                                    refreshTrigger++
+                                } else {
+                                    android.widget.Toast.makeText(context, "Gagal menghapus produk", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Error)
+                    ) {
+                        Text("Hapus", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { itemToDelete = null }) { Text("Batal") }
+                }
+            )
+        }
+
+        if (itemToEdit != null) {
+            AdminEditWarehouseItemScreen(
+                product = itemToEdit!!,
+                repository = repository,
+                onBack = { itemToEdit = null },
+                onProductUpdated = {
+                    itemToEdit = null
+                    selectedStockItem = null
+                    refreshTrigger++
+                }
+            )
+        }
+
+        Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1230,13 +1284,184 @@ fun WarehouseScreen(padding: PaddingValues) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
         }
-    }
+        }
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter),
             contentColor = Primary
         )
+    }
+}
+}
+
+// ─── Admin Edit Warehouse Item Screen ──────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminEditWarehouseItemScreen(
+    product: ProductDto,
+    repository: TehAtlasRepository,
+    onBack: () -> Unit,
+    onProductUpdated: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var productName by remember { mutableStateOf(product.name) }
+    var sku by remember { mutableStateOf(product.sku ?: "") }
+    var category by remember { mutableStateOf(product.category ?: "") }
+    var description by remember { mutableStateOf(product.description ?: "") }
+    var isUpdating by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Edit Produk Gudang", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Surface)
+            )
+        },
+        containerColor = Background
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            "Informasi Produk",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = TextPrimary
+                        )
+
+                        OutlinedTextField(
+                            value = productName, onValueChange = { productName = it },
+                            label = { Text("Nama Produk") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = sku, onValueChange = { sku = it },
+                            label = { Text("SKU") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = category, onValueChange = { category = it },
+                            label = { Text("Kategori") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = description, onValueChange = { description = it },
+                            label = { Text("Deskripsi (Opsional)") },
+                            modifier = Modifier.fillMaxWidth(), minLines = 2,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedBorderColor = Primary,
+                                unfocusedBorderColor = DividerColor,
+                                cursorColor = Primary,
+                                focusedLabelColor = Primary
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (errorMsg != null) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            errorMsg ?: "",
+                            modifier = Modifier.padding(14.dp),
+                            style = MaterialTheme.typography.bodyMedium, color = Error
+                        )
+                    }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        isUpdating = true
+                        errorMsg = null
+                        coroutineScope.launch {
+                            val fields = mapOf(
+                                "name" to productName,
+                                "sku" to sku,
+                                "category" to category,
+                                "description" to description
+                            )
+                            val result = repository.updateWarehouseItem(product.id ?: "", fields)
+                            when (result) {
+                                is Resource.Success -> {
+                                    android.widget.Toast.makeText(context, "Produk berhasil diperbarui", android.widget.Toast.LENGTH_SHORT).show()
+                                    onProductUpdated()
+                                }
+                                is Resource.Error -> { errorMsg = result.message; isUpdating = false }
+                                else -> {}
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = productName.isNotEmpty() && !isUpdating,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    if (isUpdating) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
+                    } else {
+                        Text("Simpan Perubahan", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1919,7 +2144,7 @@ fun OutletAnalyticsScreen(
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Primary.copy(alpha = 0.08f)), contentAlignment = Alignment.Center) {
-                                Text("${item.outletStock[validStats.outletId] ?: 0}", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
+                                Text("${item.stock}", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Primary)
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {

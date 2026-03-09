@@ -15,7 +15,7 @@ db.createCollection('inventory_transactions');
 // Create indexes
 db.users.createIndex({ "username": 1 }, { unique: true });
 db.warehouse_items.createIndex({ "sku": 1 }, { unique: true });
-db.outlet_items.createIndex({ "sku": 1 }, { unique: true });
+db.outlet_items.createIndex({ "location_id": 1, "sku": 1 }, { unique: true });
 db.outlets.createIndex({ "name": 1 });
 db.purchases.createIndex({ "created_at": -1 });
 db.invoices.createIndex({ "created_at": -1 });

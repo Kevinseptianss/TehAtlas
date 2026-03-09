@@ -187,6 +187,15 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Footer
+                    val versionName = remember {
+                        try {
+                            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                            packageInfo.versionName ?: "1.0.0"
+                        } catch (e: Exception) {
+                            "1.0.0"
+                        }
+                    }
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -194,7 +203,7 @@ fun LoginScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "TehAtlas v1.0.0",
+                            "TehAtlas v$versionName",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextTertiary,
                             textAlign = TextAlign.Center
@@ -438,9 +447,6 @@ private fun LoginFormCard(
             OutlinedTextField(
                 value = username,
                 onValueChange = onUsernameChange,
-                placeholder = {
-                    Text("Masukkan nama pengguna Anda", color = TextTertiary)
-                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -481,9 +487,6 @@ private fun LoginFormCard(
             OutlinedTextField(
                 value = password,
                 onValueChange = onPasswordChange,
-                placeholder = {
-                    Text("Masukkan kata sandi Anda", color = TextTertiary)
-                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None

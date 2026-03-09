@@ -77,18 +77,28 @@ Write-Host "`n[*] Step 1/3: Uploading APK to server..." -ForegroundColor Yellow
 # Ensure directory exists on server
 ssh "${SERVER_USER}@${SERVER_HOST}" "mkdir -p ${SERVER_APK_DIR}"
 
-# Upload as versioned for history AND as latest for the static link
+# Upload versioned APK first
 scp "$APK_SOURCE" "${SERVER_USER}@${SERVER_HOST}:${SERVER_APK_DIR}/${VERSIONED_FILENAME}"
-ssh "${SERVER_USER}@${SERVER_HOST}" "cp ${SERVER_APK_DIR}/${VERSIONED_FILENAME} ${SERVER_APK_DIR}/${APK_FILENAME}"
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "[!] Failed to upload APK via SCP." -ForegroundColor Red
+    Write-Host "[!] Failed to upload versioned APK via SCP." -ForegroundColor Red
     exit 1
 }
-Write-Host "[+] APK uploaded successfully" -ForegroundColor Green
+
+# Atomic symlink update for latest
+ssh "${SERVER_USER}@${SERVER_HOST}" "ln -sf ${SERVER_APK_DIR}/${VERSIONED_FILENAME} ${SERVER_APK_DIR}/${APK_FILENAME}"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[!] Failed to update symlink on server." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[+] APK uploaded and symlink updated successfully" -ForegroundColor Green
 
 # ─── Step 2: Create version record directly in DB ──────────────────────
 Write-Host "`n[*] Step 2/3: Publishing version metadata directly to MongoDB..." -ForegroundColor Yellow
+
+# Add cache busting to download URL
+$VERSIONED_DOWNLOAD_URL = "${DOWNLOAD_URL}?v=${VersionCode}"
 
 # Format release notes as a JS array of strings
 $NotesArray = @()
@@ -103,7 +113,7 @@ $MongoCommand = @"
 db.app_versions.insertOne({
     version_code: $VersionCode,
     version_name: '$VersionName',
-    download_url: '$DOWNLOAD_URL',
+    download_url: '$VERSIONED_DOWNLOAD_URL',
     release_notes: $NotesJs,
     force_update: false,
     created_at: new Date()
