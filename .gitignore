@@ -1,0 +1,23 @@
+# Secrets and environment variables
+.env
+api/.env
+*.env
+
+# Docker
+.dockerignore
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+bin/
+business-api
+main
+api/business-api
+api/main
